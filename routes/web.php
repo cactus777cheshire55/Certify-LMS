@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\MeetingPackController;
 use App\Http\Controllers\Admin\QaThreadController as AdminQaThreadController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\BrowseController;
@@ -475,6 +476,28 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('/{thread}', [AdminQaThreadController::class, 'show'])->name('show');
         Route::delete('/{thread}', [AdminQaThreadController::class, 'destroy'])->name('destroy');
         Route::delete('/{thread}/replies/{reply}', [AdminQaThreadController::class, 'destroyReply'])->name('replies.destroy');
+    });
+
+// ============================================================
+// 管理者専用 — 面談パック
+// ============================================================
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin/meeting-packs')
+    ->name('admin.meeting-packs.')
+    ->group(function () {
+        // CRUD 操作
+        Route::get('/', [MeetingPackController::class, 'index'])->name('index');
+        Route::get('/create', [MeetingPackController::class, 'create'])->name('create');
+        Route::post('/', [MeetingPackController::class, 'store'])->name('store');
+        Route::get('/{meetingPack}', [MeetingPackController::class, 'show'])->name('show');
+        Route::get('/{meetingPack}/edit', [MeetingPackController::class, 'edit'])->name('edit');
+        Route::patch('/{meetingPack}', [MeetingPackController::class, 'update'])->name('update');
+        Route::delete('/{meetingPack}', [MeetingPackController::class, 'destroy'])->name('destroy');
+
+        // 状態遷移アクション
+        Route::post('/{meetingPack}/publish', [MeetingPackController::class, 'publish'])->name('publish');
+        Route::post('/{meetingPack}/archive', [MeetingPackController::class, 'archive'])->name('archive');
+        Route::post('/{meetingPack}/unarchive', [MeetingPackController::class, 'unarchive'])->name('unarchive');
     });
 
 // ============================================================
