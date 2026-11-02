@@ -60,9 +60,7 @@ class QaThreadTest extends TestCase
         ]);
     }
 
-    /**
-     * @test
-     */
+    /** @test */
     public function 受講生は質問一覧を閲覧できる(): void
     {
         $response = $this->actingAs($this->student)->get(route('qa-board.index'));
@@ -71,9 +69,7 @@ class QaThreadTest extends TestCase
             ->assertViewIs('qa-thread.index');
     }
 
-    /**
-     * @test
-     */
+    /** @test */
     public function 受講生は新規質問を投稿できる(): void
     {
         $postData = [
@@ -96,9 +92,7 @@ class QaThreadTest extends TestCase
         $response->assertRedirect(route('qa-board.show', $thread));
     }
 
-    /**
-     * @test
-     */
+    /** @test */
     public function 他人の質問は編集できない(): void
     {
         $thread = QaThread::factory()->create([
@@ -112,9 +106,7 @@ class QaThreadTest extends TestCase
         $response->assertForbidden();
     }
 
-    /**
-     * @test
-     */
+    /** @test */
     public function 投稿者本人は解決済にマークできる(): void
     {
         $thread = QaThread::factory()->create([
@@ -134,9 +126,7 @@ class QaThreadTest extends TestCase
         ]);
     }
 
-    /**
-     * @test
-     */
+    /** @test */
     public function 管理者はモデレーション削除できる(): void
     {
         $thread = QaThread::factory()->create([
@@ -151,9 +141,7 @@ class QaThreadTest extends TestCase
         $this->assertDatabaseMissing('qa_threads', ['id' => $thread->id]);
     }
 
-    /**
-     * @test
-     */
+    /** @test */
     public function 卒業生は質問一覧にアクセスできない(): void
     {
         $graduatedStudent = User::factory()->create([
@@ -168,9 +156,7 @@ class QaThreadTest extends TestCase
         $response->assertForbidden();
     }
 
-    /**
-     * @test
-     */
+    /** @test *//
     public function 未ログインユーザーは質問一覧にアクセスできずログイン画面へリダイレクトされる(): void
     {
         $response = $this->get(route('qa-board.index'));
@@ -178,9 +164,7 @@ class QaThreadTest extends TestCase
         $response->assertRedirect(route('login'));
     }
 
-    /**
-     * @test
-     */
+    /** @test */
     public function 受講生およびコーチは回答を投稿できる(): void
     {
         $thread = QaThread::factory()->create([
@@ -200,9 +184,7 @@ class QaThreadTest extends TestCase
         ]);
     }
 
-    /**
-     * @test
-     */
+    /** @test */
     public function タイトルが空の場合はバリデーションエラーになる(): void
     {
         $response = $this->actingAs($this->student)
