@@ -8,6 +8,8 @@ use App\Enums\CertificationStatus;
 use App\Enums\QaThreadStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Http\Requests\StoreQaThreadRequest;
+use App\Http\Requests\UpdateQaThreadRequest;
 use App\Models\Certification;
 use App\Models\QaThread;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -22,10 +24,8 @@ class QaThreadController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Policy 経由で認可チェック（失敗すると自動的に 403.blade.php が表示される）
         $this->authorize('viewAny', QaThread::class);
 
-        // または直接受講生ステータスをチェックして 403 へ飛ばす場合
         $user = $request->user();
         if ($user->role === UserRole::Student && $user->status !== UserStatus::InProgress) {
             abort(403);
@@ -47,7 +47,7 @@ class QaThreadController extends Controller
             'keyword' => $request->query('keyword', ''),
         ];
 
-        // クエリの構築（N+1対策のため関連モデルを一括取得・カウント）
+        // クエリの構築
         $threadsQuery = QaThread::query()
             ->with(['user', 'certification'])
             ->withCount('replies');
@@ -67,7 +67,7 @@ class QaThreadController extends Controller
             $threadsQuery->where('certification_id', $filters['certification_id']);
         }
 
-        // キーワード検索（本文・タイトルの部分一致）
+        // キーワード検索
         if (! empty($filters['keyword'])) {
             $keyword = '%'.$filters['keyword'].'%';
             $threadsQuery->where(function ($q) use ($keyword) {
@@ -103,15 +103,9 @@ class QaThreadController extends Controller
     /**
      * 新規質問の保存
      */
-    public function store(Request $request)
+    public function store(StoreQaThreadRequest $request)
     {
-        $this->authorize('create', QaThread::class);
-
-        $validated = $request->validate([
-            'certification_id' => ['required', 'exists:certifications,id'],
-            'title' => ['required', 'string', 'max:200'],
-            'body' => ['required', 'string', 'max:5000'],
-        ]);
+        $validated = $request->validated();
 
         $thread = QaThread::create([
             'user_id' => $request->user()->id,
@@ -151,16 +145,11 @@ class QaThreadController extends Controller
     }
 
     /**
-     * 質問の更新（資格の切り替えは不可）
+     * 質問の更新
      */
-    public function update(Request $request, QaThread $thread)
+    public function update(UpdateQaThreadRequest $request, QaThread $thread)
     {
-        $this->authorize('update', $thread);
-
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:200'],
-            'body' => ['required', 'string', 'max:5000'],
-        ]);
+        $validated = $request->validated();
 
         $thread->update($validated);
 

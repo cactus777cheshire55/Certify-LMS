@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Admin\MeetingPackController;
+use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\QaThreadController as AdminQaThreadController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\BrowseController;
@@ -498,6 +499,29 @@ Route::middleware(['auth', 'role:admin'])
         Route::post('/{meetingPack}/publish', [MeetingPackController::class, 'publish'])->name('publish');
         Route::post('/{meetingPack}/archive', [MeetingPackController::class, 'archive'])->name('archive');
         Route::post('/{meetingPack}/unarchive', [MeetingPackController::class, 'unarchive'])->name('unarchive');
+    });
+
+// ============================================================
+// 管理者専用 — 受講プラン
+// ============================================================
+
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin/plans')
+    ->name('admin.plans.')
+    ->group(function () {
+        // CRUD 操作
+        Route::get('/', [PlanController::class, 'index'])->name('index');
+        Route::get('/create', [PlanController::class, 'create'])->name('create');
+        Route::post('/', [PlanController::class, 'store'])->name('store');
+        Route::get('/{plan}', [PlanController::class, 'show'])->name('show');
+        Route::get('/{plan}/edit', [PlanController::class, 'edit'])->name('edit');
+        Route::put('/{plan}', [PlanController::class, 'update'])->name('update');
+        Route::delete('/{plan}', [PlanController::class, 'destroy'])->name('destroy');
+
+        // 状態遷移アクション
+        Route::post('/{plan}/publish', [PlanController::class, 'publish'])->name('publish');
+        Route::post('/{plan}/archive', [PlanController::class, 'archive'])->name('archive');
+        Route::post('/{plan}/unarchive', [PlanController::class, 'unarchive'])->name('unarchive');
     });
 
 // ============================================================

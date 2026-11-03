@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\MeetingPackStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreMeetingPackRequest;
+use App\Http\Requests\UpdateMeetingPackRequest;
 use App\Models\MeetingPack;
 use App\Models\Payment;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -27,17 +29,14 @@ class MeetingPackController extends Controller
 
         $query = MeetingPack::query();
 
-        // 購入件数のカウント（Payment モデルが存在する場合）
         if (class_exists(Payment::class)) {
             $query->withCount('payments');
         }
 
-        // キーワード検索（パック名）
         if ($keyword !== '') {
             $query->where('name', 'like', '%'.$keyword.'%');
         }
 
-        // 状態フィルタ（draft / published / archived）
         if ($status !== '') {
             $query->where('status', $status);
         }
@@ -63,18 +62,9 @@ class MeetingPackController extends Controller
     /**
      * 新規保存（初期状態は「下書き」）
      */
-    public function store(Request $request)
+    public function store(StoreMeetingPackRequest $request)
     {
-        $this->authorize('create', MeetingPack::class);
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'meeting_count' => ['required', 'integer', 'min:1', 'max:100'],
-            'price' => ['required', 'integer', 'min:0', 'max:1000000'],
-            'stripe_price_id' => ['nullable', 'string', 'max:255'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-        ]);
+        $validated = $request->validated();
 
         $userId = $request->user()->id;
 
@@ -109,7 +99,6 @@ class MeetingPackController extends Controller
             }]);
         }
 
-        // View 側の変数名 $plan に合わせて渡す
         return view('meeting-pack.management.show', [
             'plan' => $meetingPack,
         ]);
@@ -128,20 +117,11 @@ class MeetingPackController extends Controller
     }
 
     /**
-     * 基本情報の更新（ステータスはこのフォームでは変更しない）
+     * 基本情報の更新
      */
-    public function update(Request $request, MeetingPack $meetingPack)
+    public function update(UpdateMeetingPackRequest $request, MeetingPack $meetingPack)
     {
-        $this->authorize('update', $meetingPack);
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'meeting_count' => ['required', 'integer', 'min:1', 'max:100'],
-            'price' => ['required', 'integer', 'min:0', 'max:1000000'],
-            'stripe_price_id' => ['nullable', 'string', 'max:255'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-        ]);
+        $validated = $request->validated();
 
         $meetingPack->update(array_merge($validated, [
             'updated_by_user_id' => $request->user()->id,
@@ -152,11 +132,10 @@ class MeetingPackController extends Controller
     }
 
     /**
-     * 物理削除（公開中は Policy にて拒否）
+     * 物理削除
      */
     public function destroy(MeetingPack $meetingPack)
     {
-        // 削除認可（公開中の場合は Policy の delete() が false を返し 403 になる）
         $this->authorize('delete', $meetingPack);
 
         $meetingPack->delete();
@@ -166,13 +145,12 @@ class MeetingPackController extends Controller
     }
 
     /**
-     * 公開する（下書き → 公開中）
+     * 公開する
      */
     public function publish(Request $request, MeetingPack $meetingPack)
     {
         $this->authorize('publish', $meetingPack);
 
-        // 2. ステータス更新 & 最終更新者の保存
         $meetingPack->update([
             'status' => MeetingPackStatus::Published,
             'updated_by_user_id' => $request->user()->id,
@@ -183,7 +161,7 @@ class MeetingPackController extends Controller
     }
 
     /**
-     * アーカイブする（公開中 → アーカイブ）
+     * アーカイブする
      */
     public function archive(Request $request, MeetingPack $meetingPack)
     {
@@ -199,7 +177,7 @@ class MeetingPackController extends Controller
     }
 
     /**
-     * 下書きへ戻す（アーカイブ → 下書き）
+     * 下書きへ戻す
      */
     public function unarchive(Request $request, MeetingPack $meetingPack)
     {

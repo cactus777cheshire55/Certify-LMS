@@ -21,7 +21,6 @@ class StoreQaThreadRequest extends FormRequest
         return [
             'certification_id' => [
                 'required',
-                'integer',
                 Rule::exists('certifications', 'id')->where(function ($query) {
                     $query->where('status', CertificationStatus::Published->value);
                 }),
