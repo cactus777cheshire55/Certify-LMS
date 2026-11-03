@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreQaReplyRequest;
+use App\Http\Requests\UpdateQaReplyRequest;
 use App\Models\QaReply;
 use App\Models\QaThread;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Http\Request;
 
 class QaReplyController extends Controller
 {
@@ -16,13 +17,9 @@ class QaReplyController extends Controller
     /**
      * 回答の投稿
      */
-    public function store(Request $request, QaThread $thread)
+    public function store(StoreQaReplyRequest $request, QaThread $thread)
     {
-        $this->authorize('create', [QaReply::class, $thread]);
-
-        $validated = $request->validate([
-            'body' => ['required', 'string', 'max:5000'],
-        ]);
+        $validated = $request->validated();
 
         QaReply::create([
             'qa_thread_id' => $thread->id,
@@ -50,13 +47,9 @@ class QaReplyController extends Controller
     /**
      * 回答の更新
      */
-    public function update(Request $request, QaThread $thread, QaReply $reply)
+    public function update(UpdateQaReplyRequest $request, QaThread $thread, QaReply $reply)
     {
-        $this->authorize('update', $reply);
-
-        $validated = $request->validate([
-            'body' => ['required', 'string', 'max:5000'],
-        ]);
+        $validated = $request->validated();
 
         $reply->update($validated);
 

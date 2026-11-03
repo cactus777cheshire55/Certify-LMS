@@ -49,7 +49,7 @@ class QaThreadController extends Controller
             });
         }
 
-        $threads = $threadsQuery->latest('updated_at')->paginate(15)->withQueryString();
+        $threads = $threadsQuery->latest('updated_at')->paginate(10)->withQueryString();
 
         // Blade 側は共用するため isAdminContext=true の判定で動線を切り替えます
         return view('qa-thread.index', [
