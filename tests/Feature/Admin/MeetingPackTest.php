@@ -36,7 +36,7 @@ class MeetingPackTest extends TestCase
      * ========================================================================= */
 
     /** @test */
-    public function 受講生は面談パック管理の全画面および全操作_ap_iにアクセスできず403エラーになる(): void
+    public function 受講生は面談パック管理の全画面および全操作_apiにアクセスできず403エラーになる(): void
     {
         $pack = MeetingPack::factory()->create(['status' => MeetingPackStatus::Draft]);
         $params = $this->validParams();
@@ -93,7 +93,7 @@ class MeetingPackTest extends TestCase
     }
 
     /** @test */
-    public function コーチは面談パック管理の全画面および全操作_ap_iにアクセスできず403エラーになる(): void
+    public function コーチは面談パック管理の全画面および全操作_apiにアクセスできず403エラーになる(): void
     {
         $pack = MeetingPack::factory()->create(['status' => MeetingPackStatus::Draft]);
         $params = $this->validParams();
@@ -131,7 +131,7 @@ class MeetingPackTest extends TestCase
      * ========================================================================= */
 
     /** @test */
-    public function 管理者は_ge_t_admin_meeting_packsで一覧画面を表示できる(): void
+    public function 管理者はget_admin_meeting_packsで一覧画面を表示できる(): void
     {
         $response = $this->actingAs($this->admin)
             ->get(route('admin.meeting-packs.index'));
@@ -141,7 +141,7 @@ class MeetingPackTest extends TestCase
     }
 
     /** @test */
-    public function 管理者は_ge_t_admin_meeting_packs_createで新規作成画面を表示できる(): void
+    public function 管理者は_get_admin_meeting_packs_createで新規作成画面を表示できる(): void
     {
         $response = $this->actingAs($this->admin)
             ->get(route('admin.meeting-packs.create'));
@@ -151,7 +151,7 @@ class MeetingPackTest extends TestCase
     }
 
     /** @test */
-    public function 管理者は_pos_t_admin_meeting_packsで下書きとして新規保存できる(): void
+    public function 管理者は_post_admin_meeting_packsで下書きとして新規保存できる(): void
     {
         $postData = [
             'name' => '5回追加面談パック',
@@ -195,7 +195,7 @@ class MeetingPackTest extends TestCase
     }
 
     /** @test */
-    public function 管理者は_ge_t_admin_meeting_packs_planで詳細画面を表示できる(): void
+    public function 管理者は_get_admin_meeting_packs_planで詳細画面を表示できる(): void
     {
         $pack = MeetingPack::factory()->create();
 
@@ -207,7 +207,7 @@ class MeetingPackTest extends TestCase
     }
 
     /** @test */
-    public function 管理者は_ge_t_admin_meeting_packs_plan_editで編集画面を表示できる(): void
+    public function 管理者は_get_admin_meeting_packs_plan_editで編集画面を表示できる(): void
     {
         $pack = MeetingPack::factory()->create();
 
@@ -219,7 +219,7 @@ class MeetingPackTest extends TestCase
     }
 
     /** @test */
-    public function 管理者は_patc_h_admin_meeting_packs_planで基本情報を更新できる(): void
+    public function 管理者は_patch_admin_meeting_packs_planで基本情報を更新できる(): void
     {
         $pack = MeetingPack::factory()->create(['status' => MeetingPackStatus::Draft]);
 
@@ -250,7 +250,7 @@ class MeetingPackTest extends TestCase
      * ========================================================================= */
 
     /** @test */
-    public function 管理者は_pos_t_publishで下書きから公開中に遷移できる(): void
+    public function 管理者は_post_publishで下書きから公開中に遷移できる(): void
     {
         $draftPack = MeetingPack::factory()->create(['status' => MeetingPackStatus::Draft]);
 
@@ -265,7 +265,7 @@ class MeetingPackTest extends TestCase
     }
 
     /** @test */
-    public function 管理者は_pos_t_archiveで公開中からアーカイブに遷移できる(): void
+    public function 管理者は_post_archiveで公開中からアーカイブに遷移できる(): void
     {
         $publishedPack = MeetingPack::factory()->create(['status' => MeetingPackStatus::Published]);
 
@@ -280,7 +280,7 @@ class MeetingPackTest extends TestCase
     }
 
     /** @test */
-    public function 管理者は_pos_t_unarchiveでアーカイブから下書きに復元できる(): void
+    public function 管理者は_post_unarchiveでアーカイブから下書きに復元できる(): void
     {
         $archivedPack = MeetingPack::factory()->create(['status' => MeetingPackStatus::Archived]);
 
@@ -299,7 +299,7 @@ class MeetingPackTest extends TestCase
      * ========================================================================= */
 
     /** @test */
-    public function 公開中の面談パックは_delet_eで削除できず403エラーになり_d_bにデータが残る(): void
+    public function 公開中の面談パックは_deleteで削除できず403エラーになりdbにデータが残る(): void
     {
         $publishedPack = MeetingPack::factory()->create(['status' => MeetingPackStatus::Published]);
 
@@ -314,7 +314,7 @@ class MeetingPackTest extends TestCase
     }
 
     /** @test */
-    public function 下書き状態の面談パックは_delet_eで正常に削除できる(): void
+    public function 下書き状態の面談パックはdeleteで正常に削除できる(): void
     {
         $draftPack = MeetingPack::factory()->create(['status' => MeetingPackStatus::Draft]);
 

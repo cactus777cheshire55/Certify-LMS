@@ -36,7 +36,7 @@ class PlanTest extends TestCase
      * ========================================================================= */
 
     /** @test */
-    public function 受講生はプラン管理画面や各種操作_ap_iにアクセスできず403エラーになる(): void
+    public function 受講生はプラン管理画面や各種操作_apiにアクセスできず403エラーになる(): void
     {
         $plan = Plan::factory()->create(['status' => PlanStatus::Draft]);
         $params = $this->validParams();
@@ -78,7 +78,7 @@ class PlanTest extends TestCase
     }
 
     /** @test */
-    public function コーチはプラン管理画面や各種操作_ap_iにアクセスできず403エラーになる(): void
+    public function コーチはプラン管理画面や各種操作_apiにアクセスできず403エラーになる(): void
     {
         $plan = Plan::factory()->create(['status' => PlanStatus::Draft]);
 
@@ -221,7 +221,7 @@ class PlanTest extends TestCase
     }
 
     /** @test */
-    public function 公開中や受講生が紐づくプランは削除リクエストが403エラーになり_d_bに残る(): void
+    public function 公開中や受講生が紐づくプランは削除リクエストが403エラーになりdbに残る(): void
     {
         // 1. 公開中プランの削除不可テスト
         $publishedPlan = Plan::factory()->create(['status' => PlanStatus::Published]);
@@ -239,7 +239,7 @@ class PlanTest extends TestCase
     }
 
     /** @test */
-    public function 受講生が未紐づきの指示書下書きプランは削除できる(): void
+    public function 受講生が紐づいてない下書きプランは削除できる(): void
     {
         $draftPlan = Plan::factory()->create(['status' => PlanStatus::Draft]);
 
