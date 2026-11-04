@@ -274,7 +274,7 @@ class QaThreadTest extends TestCase
      * ========================================================================= */
 
     /** @test */
-    public function 一般ユーザーは管理者用モデレーション_ap_iにアクセスできず403エラーになる(): void
+    public function 一般ユーザーは管理者用モデレーション_apiにアクセスできず403エラーになる(): void
     {
         $thread = QaThread::factory()->create(['certification_id' => $this->certification->id]);
         $reply = QaReply::factory()->create(['qa_thread_id' => $thread->id]);

@@ -8,6 +8,7 @@ use App\Http\Requests\StoreQaReplyRequest;
 use App\Http\Requests\UpdateQaReplyRequest;
 use App\Models\QaReply;
 use App\Models\QaThread;
+use App\Notifications\QaReplyReceivedNotification;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class QaReplyController extends Controller
@@ -21,11 +22,16 @@ class QaReplyController extends Controller
     {
         $validated = $request->validated();
 
-        QaReply::create([
+        $reply = QaReply::create([
             'qa_thread_id' => $thread->id,
             'user_id' => $request->user()->id,
             'body' => $validated['body'],
         ]);
+
+        // 2. 質問者本人以外の回答の場合に通知を発行
+        if ($thread->user_id !== $request->user()->id) {
+            $thread->user->notify(new QaReplyReceivedNotification($reply));
+        }
 
         // スレッドの最終更新日時を更新
         $thread->touch();
