@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\MeetingPackController;
+use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\QaThreadController as AdminQaThreadController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\BrowseController;
 use App\Http\Controllers\CertificationCatalogController;
@@ -24,7 +27,10 @@ use App\Http\Controllers\MockExamController;
 use App\Http\Controllers\MockExamQuestionController;
 use App\Http\Controllers\MockExamSessionController;
 use App\Http\Controllers\MockExamSessionMonitorController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PartController;
+use App\Http\Controllers\QaReplyController;
+use App\Http\Controllers\QaThreadController;
 use App\Http\Controllers\QuestionCategoryController;
 use App\Http\Controllers\QuizHistoryController;
 use App\Http\Controllers\QuizStatsController;
@@ -73,6 +79,12 @@ Route::middleware('auth')->group(function () {
     Route::get('enrollments/{enrollment}', [EnrollmentController::class, 'show'])
         ->withTrashed()
         ->name('enrollments.show');
+
+    // Q&A回答投稿時の通知発火接続
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+
 });
 
 // ============================================================
@@ -417,6 +429,33 @@ Route::middleware(['auth', 'role:student,coach', 'active-learning'])->group(func
 });
 
 // ============================================================
+// 受講生・コーチ共有 — 質問掲示板 (qa-board)
+// ============================================================
+Route::middleware(['auth', 'role:student,coach', 'active-learning'])
+    ->prefix('qa-board')
+    ->name('qa-board.')
+    ->group(function () {
+        // スレッド一覧・詳細
+        Route::get('/', [QaThreadController::class, 'index'])->name('index');
+        Route::get('/create', [QaThreadController::class, 'create'])->name('create');
+        Route::post('/', [QaThreadController::class, 'store'])->name('store');
+        Route::get('/{thread}', [QaThreadController::class, 'show'])->name('show');
+        Route::get('/{thread}/edit', [QaThreadController::class, 'edit'])->name('edit');
+        Route::patch('/{thread}', [QaThreadController::class, 'update'])->name('update');
+        Route::delete('/{thread}', [QaThreadController::class, 'destroy'])->name('destroy');
+
+        // 解決状態の切り替え
+        Route::post('/{thread}/resolve', [QaThreadController::class, 'resolve'])->name('resolve');
+        Route::post('/{thread}/unresolve', [QaThreadController::class, 'unresolve'])->name('unresolve');
+
+        // 回答のCRUD
+        Route::post('/{thread}/replies', [QaReplyController::class, 'store'])->name('replies.store');
+        Route::get('/{thread}/replies/{reply}/edit', [QaReplyController::class, 'edit'])->name('replies.edit');
+        Route::patch('/{thread}/replies/{reply}', [QaReplyController::class, 'update'])->name('replies.update');
+        Route::delete('/{thread}/replies/{reply}', [QaReplyController::class, 'destroy'])->name('replies.destroy');
+    });
+
+// ============================================================
 // コーチ専用 — chat 未読あり一覧
 // ============================================================
 Route::middleware(['auth', 'role:coach', 'active-learning'])->group(function () {
@@ -433,6 +472,64 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('chat-rooms/{room}', [ChatRoomController::class, 'show'])
         ->name('admin.chat-rooms.show');
 });
+
+// ============================================================
+// 管理者専用 — 質問掲示板 モデレーション
+// ============================================================
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin/qa-board')
+    ->name('admin.qa-board.')
+    ->group(function () {
+        Route::get('/', [AdminQaThreadController::class, 'index'])->name('index');
+        Route::get('/{thread}', [AdminQaThreadController::class, 'show'])->name('show');
+        Route::delete('/{thread}', [AdminQaThreadController::class, 'destroy'])->name('destroy');
+        Route::delete('/{thread}/replies/{reply}', [AdminQaThreadController::class, 'destroyReply'])->name('replies.destroy');
+    });
+
+// ============================================================
+// 管理者専用 — 面談パック
+// ============================================================
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin/meeting-packs')
+    ->name('admin.meeting-packs.')
+    ->group(function () {
+        // CRUD 操作
+        Route::get('/', [MeetingPackController::class, 'index'])->name('index');
+        Route::get('/create', [MeetingPackController::class, 'create'])->name('create');
+        Route::post('/', [MeetingPackController::class, 'store'])->name('store');
+        Route::get('/{meetingPack}', [MeetingPackController::class, 'show'])->name('show');
+        Route::get('/{meetingPack}/edit', [MeetingPackController::class, 'edit'])->name('edit');
+        Route::patch('/{meetingPack}', [MeetingPackController::class, 'update'])->name('update');
+        Route::delete('/{meetingPack}', [MeetingPackController::class, 'destroy'])->name('destroy');
+
+        // 状態遷移アクション
+        Route::post('/{meetingPack}/publish', [MeetingPackController::class, 'publish'])->name('publish');
+        Route::post('/{meetingPack}/archive', [MeetingPackController::class, 'archive'])->name('archive');
+        Route::post('/{meetingPack}/unarchive', [MeetingPackController::class, 'unarchive'])->name('unarchive');
+    });
+
+// ============================================================
+// 管理者専用 — 受講プラン
+// ============================================================
+
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin/plans')
+    ->name('admin.plans.')
+    ->group(function () {
+        // CRUD 操作
+        Route::get('/', [PlanController::class, 'index'])->name('index');
+        Route::get('/create', [PlanController::class, 'create'])->name('create');
+        Route::post('/', [PlanController::class, 'store'])->name('store');
+        Route::get('/{plan}', [PlanController::class, 'show'])->name('show');
+        Route::get('/{plan}/edit', [PlanController::class, 'edit'])->name('edit');
+        Route::put('/{plan}', [PlanController::class, 'update'])->name('update');
+        Route::delete('/{plan}', [PlanController::class, 'destroy'])->name('destroy');
+
+        // 状態遷移アクション
+        Route::post('/{plan}/publish', [PlanController::class, 'publish'])->name('publish');
+        Route::post('/{plan}/archive', [PlanController::class, 'archive'])->name('archive');
+        Route::post('/{plan}/unarchive', [PlanController::class, 'unarchive'])->name('unarchive');
+    });
 
 // ============================================================
 // コーチ専用ルート — 担当資格受講生管理 / 面談管理 / メモ記録
