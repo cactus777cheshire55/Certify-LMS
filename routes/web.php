@@ -48,6 +48,9 @@ use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
 use App\Http\Controllers\WeakDrillResultController;
+use App\Http\Controllers\Settings\AvatarController;
+use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -86,6 +89,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
 
+    // 設定・プロフィール
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::post('avatar', [AvatarController::class, 'store'])->name('avatar.store');
+        Route::delete('avatar', [AvatarController::class, 'destroy'])->name('avatar.destroy');
+        Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+    });
 });
 
 // ============================================================
