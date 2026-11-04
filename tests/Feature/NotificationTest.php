@@ -71,7 +71,7 @@ class NotificationTest extends TestCase
     }
 
     /** @test */
-    public function 自分の通知を既読にすると指定_ur_lへリダイレクトされる(): void
+    public function 自分の通知を既読にすると指定urlへリダイレクトされる(): void
     {
         $this->student1->notify(new QaReplyReceivedNotification(
             QaReply::factory()->create()
@@ -101,7 +101,7 @@ class NotificationTest extends TestCase
     }
 
     /** @test */
-    public function q_aの回答投稿時に質問者に通知とメールが送信される(): void
+    public function qaの回答投稿時に質問者に通知とメールが送信される(): void
     {
         // 1. テストデータの準備
         $cert = Certification::factory()->create(['status' => CertificationStatus::Published]);
