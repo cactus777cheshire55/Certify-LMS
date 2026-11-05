@@ -51,6 +51,7 @@ use App\Http\Controllers\WeakDrillResultController;
 use App\Http\Controllers\Settings\AvatarController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\EnrollmentNoteController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -97,6 +98,12 @@ Route::middleware('auth')->group(function () {
         Route::delete('avatar', [AvatarController::class, 'destroy'])->name('avatar.destroy');
         Route::put('password', [PasswordController::class, 'update'])->name('password.update');
     });
+    
+    // 受講生メモ（コーチ / 管理者用）
+    Route::post('enrollments/{enrollment}/notes', [EnrollmentNoteController::class, 'store'])->name('enrollments.notes.store');
+    Route::get('enrollment-notes/{note}/edit', [EnrollmentNoteController::class, 'edit'])->name('enrollment-notes.edit');
+    Route::patch('enrollment-notes/{note}', [EnrollmentNoteController::class, 'update'])->name('enrollment-notes.update');
+    Route::delete('enrollment-notes/{note}', [EnrollmentNoteController::class, 'destroy'])->name('enrollment-notes.destroy');
 });
 
 // ============================================================
