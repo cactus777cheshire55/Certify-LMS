@@ -9,7 +9,6 @@ use Illuminate\Validation\Rules\Password;
 
 class UpdatePasswordRequest extends FormRequest
 {
-    // Blade側で $errors->updatePassword を参照できるエラーバッグ名
     protected $errorBag = 'updatePassword';
 
     public function authorize(): bool
@@ -21,24 +20,23 @@ class UpdatePasswordRequest extends FormRequest
     {
         return [
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'string', Password::min(8), 'confirmed'],
+            'password' => ['required', 'string', Password::min(8), 'confirmed','max:255'],
         ];
     }
 
     public function messages(): array
     {
         return [
-            'current_password.required' => ':attributeを入力してください。', 
-            
-            'current_password.current_password' => '入力された:attributeが現在のパスワードと一致しません。',
+            'current_password.required' => ':attributeを入力してください。',
+            'current_password.current_password' => ':attributeが正しくありません。',
         ];
     }
 
     public function attributes(): array
     {
         return [
-            'current_password' => 'パスワード',
-            'password' => 'パスワード',
+            'current_password' => '現在のパスワード',
+            'password' => '新しいパスワード',
         ];
     }
 }

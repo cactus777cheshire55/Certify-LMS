@@ -11,17 +11,16 @@ class UpdateProfileRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // ログインユーザー本人の操作のため常に true
+        return true;
     }
 
     public function rules(): array
     {
         $rules = [
-            'name' => ['required', 'string', 'max:50'],
+            'name' => ['required', 'string', 'max:255'],
             'bio' => ['nullable', 'string', 'max:1000'],
         ];
 
-        // コーチのみ固定面談URLのバリデーションを追加
         if ($this->user()?->role === UserRole::Coach) {
             $rules['meeting_url'] = ['nullable', 'url', 'max:500'];
         }
@@ -34,6 +33,7 @@ class UpdateProfileRequest extends FormRequest
         return [
             'name' => '氏名',
             'bio' => '自己紹介',
+            'meeting_url' => '固定面談URL',
         ];
     }
 }
