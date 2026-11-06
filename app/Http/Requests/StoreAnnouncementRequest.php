@@ -34,6 +34,14 @@ class StoreAnnouncementRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'target_certification_id.required_if' => '配信対象が資格指定の場合は、対象資格を指定してください。',
+            'target_user_id.required_if'          => '配信対象がユーザー指定の場合は、対象受講生を指定してください。',
+        ];
+    }
+
     public function attributes(): array
     {
         return [
