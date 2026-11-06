@@ -22,11 +22,7 @@ class SectionPolicy
 {
     public function viewAny(User $auth, Chapter $chapter): bool
     {
-        return match ($auth->role) {
-            UserRole::Admin => true,
-            UserRole::Coach => false,
-            default => false,
-        };
+        return $this->canManage($auth, $chapter->part->certification);
     }
 
     public function view(User $auth, Section $section): bool
@@ -35,9 +31,7 @@ class SectionPolicy
             return true;
         }
 
-        if ($auth->role === UserRole::Coach) {
-            return false;
-        }
+        if ($auth->role === UserRole::Coach) { return $this->assignedCoach($auth, $section->chapter->part->certification); }
 
         return $section->status === ContentStatus::Published
             && $section->chapter->status === ContentStatus::Published
@@ -83,7 +77,7 @@ class SectionPolicy
     {
         return match ($auth->role) {
             UserRole::Admin => true,
-            UserRole::Coach => false,
+            UserRole::Coach => $this->assignedCoach($auth, $certification),
             default => false,
         };
     }
