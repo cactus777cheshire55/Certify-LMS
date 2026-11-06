@@ -52,6 +52,7 @@ use App\Http\Controllers\Settings\AvatarController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\EnrollmentNoteController;
+use App\Http\Controllers\Admin\AnnouncementController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -85,10 +86,11 @@ Route::middleware('auth')->group(function () {
         ->withTrashed()
         ->name('enrollments.show');
 
-    // Q&A回答投稿時の通知発火接続
-    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
-    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+    // 通知関連（S-B-04 / S-B-08）
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/{notification}', [NotificationController::class, 'show'])->name('notifications.show');
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
 
     // 設定・プロフィール
     Route::prefix('settings')->name('settings.')->group(function () {
@@ -98,7 +100,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('avatar', [AvatarController::class, 'destroy'])->name('avatar.destroy');
         Route::put('password', [PasswordController::class, 'update'])->name('password.update');
     });
-    
+
     // 受講生メモ（コーチ / 管理者用）
     Route::post('enrollments/{enrollment}/notes', [EnrollmentNoteController::class, 'store'])->name('enrollments.notes.store');
     Route::get('enrollment-notes/{note}/edit', [EnrollmentNoteController::class, 'edit'])->name('enrollment-notes.edit');
@@ -231,6 +233,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
         ->name('admin.enrollments.updateExamDate');
     Route::post('enrollments/{enrollment}/fail', [EnrollmentManagementController::class, 'fail'])
         ->name('admin.enrollments.fail');
+
+    // お知らせ配信管理（S-B-08）
+    Route::get('announcements', [AnnouncementController::class, 'index'])->name('admin.announcements.index');
+    Route::get('announcements/create', [AnnouncementController::class, 'create'])->name('admin.announcements.create');
+    Route::post('announcements', [AnnouncementController::class, 'store'])->name('admin.announcements.store');
+    Route::get('announcements/{announcement}', [AnnouncementController::class, 'show'])->name('admin.announcements.show');
 });
 
 // ============================================================
