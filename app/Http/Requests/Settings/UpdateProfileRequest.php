@@ -17,12 +17,12 @@ class UpdateProfileRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:50'],
             'bio' => ['nullable', 'string', 'max:1000'],
         ];
 
         if ($this->user()?->role === UserRole::Coach) {
-            $rules['meeting_url'] = ['nullable', 'url', 'max:500'];
+            $rules['meeting_url'] = ['required', 'url', 'max:500'];
         }
 
         return $rules;

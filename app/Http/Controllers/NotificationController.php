@@ -32,11 +32,28 @@ class NotificationController extends Controller
     }
 
     /**
-     * 単一通知の既読化と画面遷移
+     * 通知詳細表示（自分宛の通知のみ・自動既読化）
+     */
+    public function show(Request $request, DatabaseNotification $notification): View
+    {
+        // 他人宛の通知へのアクセス防止
+        if ($notification->notifiable_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        // 詳細画面を開いた際に未読であれば既読化
+        if ($notification->unread()) {
+            $notification->markAsRead();
+        }
+
+        return view('notifications.show', compact('notification'));
+    }
+
+    /**
+     * 単一通知の既読化と画面遷移（直リンク・ダイレクト遷移用）
      */
     public function markAsRead(Request $request, DatabaseNotification $notification): RedirectResponse
     {
-        // 他人宛の通知へのアクセス防止
         if ($notification->notifiable_id !== $request->user()->id) {
             abort(403);
         }
@@ -45,9 +62,18 @@ class NotificationController extends Controller
             $notification->markAsRead();
         }
 
-        $targetUrl = $notification->data['url'] ?? route('notifications.index');
+        // 1. data['url'] が明示的に設定されている場合はそのURLへ
+        if (!empty($notification->data['url'])) {
+            return redirect()->to($notification->data['url']);
+        }
 
-        return redirect()->to($targetUrl);
+        // 2. 全体お知らせ通知の場合は詳細画面（notifications.show）へ遷移
+        if (($notification->data['notification_type'] ?? '') === 'admin_announcement') {
+            return redirect()->route('notifications.show', $notification);
+        }
+
+        // 3. それ以外は通知一覧へ
+        return redirect()->route('notifications.index');
     }
 
     /**
