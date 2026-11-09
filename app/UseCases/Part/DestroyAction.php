@@ -6,8 +6,10 @@ namespace App\UseCases\Part;
 
 use App\Enums\ContentStatus;
 use App\Exceptions\Content\ContentNotDeletableException;
+use App\Models\LearningSession;
 use App\Models\Part;
 use App\Models\Section;
+use App\Models\SectionProgress;
 use App\Models\SectionQuestion;
 use Illuminate\Support\Facades\DB;
 
@@ -34,6 +36,13 @@ final class DestroyAction
                 $sectionIds = Section::whereIn('chapter_id', $chapterIds)->pluck('id');
 
                 if ($sectionIds->isNotEmpty()) {
+                    // セクション配下の学習滞在セッション（ログ）を削除（外部キー制約対策）
+                    LearningSession::whereIn('section_id', $sectionIds)->delete();
+
+                    // セクション配下の進捗データを削除（外部キー制約対策）
+                    // ※もしモデル名が異なる場合はプロジェクトに合わせて調整してください
+                    SectionProgress::whereIn('section_id', $sectionIds)->delete();
+
                     // 3. セクション配下の演習問題を削除
                     SectionQuestion::whereIn('section_id', $sectionIds)->delete();
 
