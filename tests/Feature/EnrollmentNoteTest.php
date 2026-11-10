@@ -19,10 +19,15 @@ class EnrollmentNoteTest extends TestCase
     use RefreshDatabase;
 
     private User $assignedCoach;
+
     private User $otherCoach;
+
     private User $admin;
+
     private User $student;
+
     private Enrollment $enrollment;
+
     private EnrollmentNote $assignedCoachNote;
 
     protected function setUp(): void
@@ -39,7 +44,7 @@ class EnrollmentNoteTest extends TestCase
         ]);
 
         $cert = Certification::factory()->create(['status' => CertificationStatus::Published]);
-        
+
         // 担当コーチの割り当て
         $cert->coaches()->attach($this->assignedCoach->id, [
             'assigned_by_user_id' => $this->admin->id,
@@ -165,7 +170,7 @@ class EnrollmentNoteTest extends TestCase
             ->delete(route('enrollment-notes.destroy', $this->assignedCoachNote))
             ->assertForbidden();
     }
-    
+
     /** @test */
     public function 同じ資格の担当コーチであっても他人が書いたメモは編集・削除できず403エラーになる(): void
     {

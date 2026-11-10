@@ -40,7 +40,7 @@ class PlanController extends Controller
 
         $plans = $query->orderBy('sort_order')
             ->latest('updated_at')
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString();
 
         return view('plan.management.index', compact('plans', 'keyword', 'status'));

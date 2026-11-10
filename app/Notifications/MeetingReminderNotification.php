@@ -31,7 +31,7 @@ class MeetingReminderNotification extends Notification
         return (new MailMessage)
             ->subject("【リマインダー】{$timingLabel}に面談が予定されています")
             ->line("{$timingLabel}（{$timeStr}）に面談が予定されています。")
-            ->line('相談内容: ' . $this->meeting->topic)
+            ->line('相談内容: '.$this->meeting->topic)
             ->action('面談詳細を確認する', route('meetings.show', $this->meeting));
     }
 
@@ -41,7 +41,7 @@ class MeetingReminderNotification extends Notification
 
         return [
             'title' => "【リマインダー】{$timingLabel}の面談通知",
-            'body' => "{$timingLabel}（" . $this->meeting->scheduled_at->format('H:i') . "〜）に面談が予定されています。",
+            'body' => "{$timingLabel}（".$this->meeting->scheduled_at->format('H:i').'〜）に面談が予定されています。',
             'notification_type' => 'meeting_reminder',
             'meeting_id' => $this->meeting->id,
             'url' => route('meetings.show', $this->meeting),

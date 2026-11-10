@@ -23,14 +23,23 @@ class ContentManagementAuthorizationTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $assignedCoach;
+
     private User $unassignedCoach;
+
     private User $student;
+
     private Certification $certificationX;
+
     private Part $partX;
+
     private Chapter $chapterX;
+
     private Section $sectionX;
+
     private QuestionCategory $categoryX;
+
     private SectionQuestion $questionX;
 
     protected function setUp(): void
@@ -85,7 +94,7 @@ class ContentManagementAuthorizationTest extends TestCase
      * ========================================================================= */
 
     /** @test */
-    public function 担当コーチはPartの一覧・作成・詳細・更新・公開・下書き化・並び替え・削除が許可され正しくリダイレクトされる(): void
+    public function 担当コーチは_partの一覧・作成・詳細・更新・公開・下書き化・並び替え・削除が許可され正しくリダイレクトされる(): void
     {
         // 閲覧（200 OK）
         $this->actingAs($this->assignedCoach)
@@ -136,7 +145,7 @@ class ContentManagementAuthorizationTest extends TestCase
     }
 
     /** @test */
-    public function 担当コーチはChapterの詳細・更新・公開・下書き化・削除が許可され正しくリダイレクトされる(): void
+    public function 担当コーチは_chapterの詳細・更新・公開・下書き化・削除が許可され正しくリダイレクトされる(): void
     {
         $this->actingAs($this->assignedCoach)
             ->get(route('admin.chapters.show', $this->chapterX))
@@ -165,7 +174,7 @@ class ContentManagementAuthorizationTest extends TestCase
     }
 
     /** @test */
-    public function 担当コーチはSectionの詳細・更新・公開・下書き化・削除が許可され正しくリダイレクトされる(): void
+    public function 担当コーチは_sectionの詳細・更新・公開・下書き化・削除が許可され正しくリダイレクトされる(): void
     {
         $this->actingAs($this->assignedCoach)
             ->get(route('admin.sections.show', $this->sectionX))

@@ -18,8 +18,11 @@ class ProfileTest extends TestCase
     use RefreshDatabase;
 
     private User $student;
+
     private User $coach;
+
     private User $admin;
+
     private User $graduatedStudent;
 
     protected function setUp(): void
@@ -98,23 +101,23 @@ class ProfileTest extends TestCase
     }
 
     /** @test */
-    public function コーチのみ固定面談URLを更新でき受講生や管理者の入力は無視される(): void
+    public function コーチのみ固定面談_ur_lを更新でき受講生や管理者の入力は無視される(): void
     {
         // 1. コーチは meeting_url を更新できる
         $this->actingAs($this->coach)
             ->patch(route('settings.profile.update'), [
                 'name' => $this->coach->name,
-                'meeting_url' => 'https://zoom.us', 
+                'meeting_url' => 'https://zoom.us',
             ])
             ->assertRedirect(route('settings.profile.edit'));
 
-        $this->assertEquals('https://zoom.us', $this->coach->fresh()->meeting_url); 
+        $this->assertEquals('https://zoom.us', $this->coach->fresh()->meeting_url);
 
         // 2. 受講生が meeting_url を送信しても更新されない（無視される）
         $this->actingAs($this->student)
             ->patch(route('settings.profile.update'), [
                 'name' => $this->student->name,
-                'meeting_url' => 'https://zoom.us', 
+                'meeting_url' => 'https://zoom.us',
             ])
             ->assertRedirect(route('settings.profile.edit'));
 
@@ -151,7 +154,7 @@ class ProfileTest extends TestCase
     }
 
     /** @test */
-    public function 画像以外のファイルや2MBを超える画像アップロードはバリデーションエラーになる(): void
+    public function 画像以外のファイルや2_m_bを超える画像アップロードはバリデーションエラーになる(): void
     {
         Storage::fake('public');
 

@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\AnnouncementTargetType;
+use App\Enums\CertificationStatus;
+use App\Enums\EnrollmentStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAnnouncementRequest;
 use App\Models\Announcement;
 use App\Models\Certification;
-use App\Models\Enrollment;
 use App\Models\User;
 use App\Notifications\AdminAnnouncementNotification;
 use Illuminate\Http\RedirectResponse;
@@ -28,7 +29,7 @@ class AnnouncementController extends Controller
     {
         $announcements = Announcement::with(['targetCertification', 'targetUser', 'createdBy'])
             ->orderByDesc('dispatched_at')
-            ->paginate(15);
+            ->paginate(20);
 
         return view('announcement.management.index', compact('announcements'));
     }
@@ -38,7 +39,7 @@ class AnnouncementController extends Controller
      */
     public function create(): View
     {
-        $certifications = Certification::where('status', \App\Enums\CertificationStatus::Published)
+        $certifications = Certification::where('status', CertificationStatus::Published)
             ->orderBy('name')
             ->get();
 
@@ -66,7 +67,7 @@ class AnnouncementController extends Controller
 
             AnnouncementTargetType::Certification => User::whereHas('enrollments', function ($query) use ($validated) {
                 $query->where('certification_id', $validated['target_certification_id'])
-                    ->where('status', \App\Enums\EnrollmentStatus::Learning);
+                    ->where('status', EnrollmentStatus::Learning);
             })->where('role', UserRole::Student)->where('status', UserStatus::InProgress)->get(),
 
             AnnouncementTargetType::User => User::where('id', $validated['target_user_id'])->get(),

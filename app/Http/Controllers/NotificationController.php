@@ -25,7 +25,7 @@ class NotificationController extends Controller
             $query->whereNull('read_at');
         }
 
-        $notifications = $query->paginate(10)->withQueryString();
+        $notifications = $query->paginate(20)->withQueryString();
         $unreadCount = $user->unreadNotifications()->count();
 
         return view('notifications.index', compact('notifications', 'unreadCount', 'tab'));
@@ -63,7 +63,7 @@ class NotificationController extends Controller
         }
 
         // 1. data['url'] が明示的に設定されている場合はそのURLへ
-        if (!empty($notification->data['url'])) {
+        if (! empty($notification->data['url'])) {
             return redirect()->to($notification->data['url']);
         }
 

@@ -15,7 +15,6 @@ use App\Models\Enrollment;
 use App\Models\User;
 use App\Notifications\AdminAnnouncementNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -25,10 +24,15 @@ class AnnouncementTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $student1;
+
     private User $student2;
+
     private User $withdrawnStudent;
+
     private User $coach;
+
     private Certification $certification;
 
     protected function setUp(): void

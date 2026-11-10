@@ -43,7 +43,7 @@ class MeetingPackController extends Controller
 
         $plans = $query->orderBy('sort_order')
             ->latest('updated_at')
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString();
 
         return view('meeting-pack.management.index', compact('plans', 'keyword', 'status'));

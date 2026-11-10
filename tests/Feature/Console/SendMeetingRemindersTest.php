@@ -21,7 +21,9 @@ class SendMeetingRemindersTest extends TestCase
     use RefreshDatabase;
 
     private User $student;
+
     private User $coach;
+
     private Enrollment $enrollment;
 
     protected function setUp(): void

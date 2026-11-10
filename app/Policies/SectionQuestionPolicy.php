@@ -34,7 +34,9 @@ class SectionQuestionPolicy
             return true;
         }
 
-        if ($auth->role === UserRole::Coach) { return $this->assignedCoach($auth, $certification); }
+        if ($auth->role === UserRole::Coach) {
+            return $this->assignedCoach($auth, $certification);
+        }
 
         if ($question->status !== ContentStatus::Published) {
             return false;

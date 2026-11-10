@@ -31,8 +31,8 @@ class EnrollmentNoteFactory extends Factory
         return [
             // HasUlidsトレイトが自動でIDを生成するため、本来は明示的なStr::ulid()の指定は不要です
             'enrollment_id' => Enrollment::factory(),
-            'author_id'     => User::factory(),
-            'body'          => $this->faker->realText(200),
+            'author_id' => User::factory(),
+            'body' => $this->faker->realText(200),
         ];
     }
 }
