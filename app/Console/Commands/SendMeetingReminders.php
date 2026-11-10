@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Notification;
 class SendMeetingReminders extends Command
 {
     protected $signature = 'notifications:send-meeting-reminders {--window= : 配信ウィンドウ (eve または one_hour_before)}';
+
     protected $description = '予約済み面談の事前リマインダー通知を送信する';
 
     public function handle(): int
@@ -23,6 +24,7 @@ class SendMeetingReminders extends Command
 
         if (! in_array($window, ['eve', 'one_hour_before'], true)) {
             $this->error('無効な window オプションです。--window=eve または --window=one_hour_before を指定してください。');
+
             return Command::FAILURE;
         }
 
@@ -55,7 +57,7 @@ class SendMeetingReminders extends Command
             DB::transaction(function () use ($meeting, $window, $now, &$dispatchedCount) {
                 // 送信済みフラグをロック更新（二重送信防止）
                 $column = $window === 'eve' ? 'reminded_eve_at' : 'reminded_one_hour_at';
-                
+
                 $updated = Meeting::where('id', $meeting->id)
                     ->whereNull($column)
                     ->update([$column => $now]);

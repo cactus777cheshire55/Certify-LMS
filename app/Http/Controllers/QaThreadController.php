@@ -76,7 +76,7 @@ class QaThreadController extends Controller
             });
         }
 
-        $threads = $threadsQuery->latest('updated_at')->paginate(10)->withQueryString();
+        $threads = $threadsQuery->latest('updated_at')->paginate(20)->withQueryString();
 
         return view('qa-thread.index', [
             'threads' => $threads,

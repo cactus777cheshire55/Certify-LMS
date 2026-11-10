@@ -31,7 +31,9 @@ class SectionPolicy
             return true;
         }
 
-        if ($auth->role === UserRole::Coach) { return $this->assignedCoach($auth, $section->chapter->part->certification); }
+        if ($auth->role === UserRole::Coach) {
+            return $this->assignedCoach($auth, $section->chapter->part->certification);
+        }
 
         return $section->status === ContentStatus::Published
             && $section->chapter->status === ContentStatus::Published

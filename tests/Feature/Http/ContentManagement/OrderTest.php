@@ -17,6 +17,7 @@ final class ContentManagementOrderTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private Certification $certification;
 
     protected function setUp(): void
@@ -29,7 +30,7 @@ final class ContentManagementOrderTest extends TestCase
     }
 
     /** @test */
-    public function Part一覧がorderの昇順でソートされて取得できることを検証(): void
+    public function part一覧がorderの昇順でソートされて取得できる(): void
     {
         // 意図的に ID の作成順と order の数値を逆にする
         $part2 = Part::factory()->create([
@@ -55,7 +56,7 @@ final class ContentManagementOrderTest extends TestCase
     }
 
     /** @test */
-    public function Chapter一覧がorderの昇順でソートされて取得できることを検証(): void
+    public function chapter一覧がorderの昇順でソートされて取得できる(): void
     {
         $part = Part::factory()->create(['certification_id' => $this->certification->id]);
 
@@ -79,7 +80,7 @@ final class ContentManagementOrderTest extends TestCase
     }
 
     /** @test */
-    public function Section一覧がorderの昇順でソートされて取得できることを検証(): void
+    public function section一覧がorderの昇順でソートされて取得できることを検証(): void
     {
         $part = Part::factory()->create(['certification_id' => $this->certification->id]);
         $chapter = Chapter::factory()->create(['part_id' => $part->id]);
