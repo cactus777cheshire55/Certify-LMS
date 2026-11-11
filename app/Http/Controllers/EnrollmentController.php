@@ -120,6 +120,8 @@ class EnrollmentController extends Controller
             ]);
         }
 
+        $goals = $enrollment->goals()->orderBy('created_at', 'desc')->get();
+
         return view('enrollment.show', [
             'enrollment' => $enrollment,
             'progress' => $progress,

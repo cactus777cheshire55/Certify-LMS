@@ -8,7 +8,6 @@ use App\Enums\InvitationStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Exceptions\Auth\InvalidInvitationTokenException;
-use App\Http\Controllers\Auth\OnboardingController;
 use App\Models\Invitation;
 use App\Models\User;
 use App\Services\UserStatusChangeService;
@@ -19,14 +18,6 @@ use Illuminate\Support\Facades\Hash;
 
 /**
  * 招待を受領し、既存 invited User を受講中(in_progress)に遷移させ、自動ログインさせるユースケース。
- *
- * - status を invited → in_progress に更新し、Plan 期間(`plan_started_at` / `plan_expires_at`)を確定する
- * - コーチ宛て招待では `meeting_url` を必須項目として保存する(空文字 / 未指定は FormRequest で 422 に弾く前提)
- * - 初期付与の面談回数を MeetingQuotaTransaction(`granted_initial`)として起票する(残数集計の整合性のため `User.max_meetings`
- *   とは別経路で履歴を残す)
- * - 全 DB 操作は `DB::transaction()` で囲み、自動ログインは commit 後に実施する
- *
- * @see OnboardingController::store()
  */
 final class OnboardAction
 {
@@ -90,6 +81,12 @@ final class OnboardAction
             );
 
             $user->forceFill($attrs)->save();
+
+            // ★【修正箇所】招待トークンを使用済み（Accepted）に変更し、完了日時を記録する
+            $invitation->forceFill([
+                'status' => InvitationStatus::Accepted,
+                'accepted_at' => $now,
+            ])->save();
 
             // 面談クォータは受講生固有の消費対象。コーチは面談を提供する側のため初期付与しない。
             if ($user->role === UserRole::Student && $user->plan->default_meeting_quota > 0) {
