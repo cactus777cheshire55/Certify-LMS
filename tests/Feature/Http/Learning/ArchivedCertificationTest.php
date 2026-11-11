@@ -21,7 +21,7 @@ final class ArchivedCertificationTest extends TestCase
     use RefreshDatabase;
 
     /** @test */
-    public function 公開停止された資格の_part_chapter_sectionにアクセスすると404エラーになることを検証(): void
+    public function 公開停止された資格の_part_chapter_sectionにアクセスすると404エラーになる(): void
     {
         $student = User::factory()->create();
 
