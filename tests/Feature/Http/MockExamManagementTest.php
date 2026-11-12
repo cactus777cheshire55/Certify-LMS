@@ -15,6 +15,7 @@ final class MockExamManagementTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private Certification $certification;
 
     protected function setUp(): void

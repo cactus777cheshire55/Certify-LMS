@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Http\Enrollment;
 
+use App\Enums\EnrollmentStatus;
+use App\Enums\UserRole;
 use App\Models\Certification;
 use App\Models\Enrollment;
 use App\Models\User;
@@ -81,5 +83,39 @@ class UpdateExamDateTest extends TestCase
 
         // Assert
         $response->assertStatus(422);
+    }
+
+    /** @test */
+    public function student_is_redirected_to_enrollment_detail_page_after_updating_exam_date(): void
+    {
+        $student = User::factory()->create([
+            'role' => UserRole::Student,
+            'status' => 'in_progress',
+        ]);
+
+        $certification = Certification::factory()->published()->create();
+
+        $enrollment = Enrollment::factory()->create([
+            'user_id' => $student->id,
+            'certification_id' => $certification->id,
+            'status' => EnrollmentStatus::Learning,
+            'exam_date' => null,
+        ]);
+
+        $newExamDate = now()->addMonths(2)->format('Y-m-d');
+
+        $response = $this->actingAs($student)
+            ->patch(route('enrollments.updateExamDate', $enrollment), [
+                'exam_date' => $newExamDate,
+            ]);
+
+        // ダッシュボードではなく受講登録詳細画面へリダイレクトされること
+        $response->assertRedirect(route('enrollments.show', $enrollment));
+        $response->assertSessionHas('success', '目標受験日を更新しました。');
+
+        $this->assertDatabaseHas('enrollments', [
+            'id' => $enrollment->id,
+            'exam_date' => $newExamDate,
+        ]);
     }
 }
