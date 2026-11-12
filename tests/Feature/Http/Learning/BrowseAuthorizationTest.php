@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Http\Learning;
 
-use App\Enums\ContentStatus;
 use App\Enums\EnrollmentStatus;
 use App\Enums\UserRole;
 use App\Models\Certification;
@@ -21,7 +20,7 @@ final class BrowseAuthorizationTest extends TestCase
     use RefreshDatabase;
 
     /** @test */
-    public function 受講登録していない資格のPart詳細へ直リンクアクセスした場合は403が返る(): void
+    public function 受講登録していない資格の_part詳細へ直リンクアクセスした場合は403が返る(): void
     {
         $student = User::factory()->create([
             'role' => UserRole::Student,
@@ -37,7 +36,7 @@ final class BrowseAuthorizationTest extends TestCase
     }
 
     /** @test */
-    public function 受講登録していない資格のChapter詳細へ直リンクアクセスした場合は403が返る(): void
+    public function 受講登録していない資格の_chapter詳細へ直リンクアクセスした場合は403が返る(): void
     {
         $student = User::factory()->create([
             'role' => UserRole::Student,
@@ -54,7 +53,7 @@ final class BrowseAuthorizationTest extends TestCase
     }
 
     /** @test */
-    public function 受講登録していない資格のSection詳細へ直リンクアクセスした場合は403が返る(): void
+    public function 受講登録していない資格の_section詳細へ直リンクアクセスした場合は403が返る(): void
     {
         $student = User::factory()->create([
             'role' => UserRole::Student,
