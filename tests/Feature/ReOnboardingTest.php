@@ -21,7 +21,7 @@ final class ReOnboardingTest extends TestCase
     use RefreshDatabase;
 
     /** @test */
-    public function 一度オンボーディングを完了した招待URLは使い回せない(): void
+    public function 一度オンボーディングを完了した招待_ur_lは使い回せない(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin]);
         $plan = Plan::factory()->create();
@@ -42,7 +42,7 @@ final class ReOnboardingTest extends TestCase
             'expires_at' => now()->addDays(7),
         ]);
 
-        $tokenService = new InvitationTokenService();
+        $tokenService = new InvitationTokenService;
         $showUrl = $tokenService->generateUrl($invitation);
 
         // 1回目のオンボーディング（正常完了）
