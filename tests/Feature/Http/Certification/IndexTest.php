@@ -8,6 +8,7 @@ use App\Models\Certification;
 use App\Models\CertificationCategory;
 use App\Models\CertificationCoachAssignment;
 use App\Models\User;
+use App\Enums\CertificationStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -112,5 +113,24 @@ class IndexTest extends TestCase
         $certs = $response->viewData('certifications');
         $this->assertSame(20, $certs->perPage());
         $this->assertSame(22, $certs->total());
+    }
+
+    /** @test */
+    public function test_admin_can_filter_certifications_by_status(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $publishedCert = Certification::factory()->published()->create(['name' => '公開中資格']);
+        $draftCert = Certification::factory()->draft()->create(['name' => '下書き資格']);
+
+        // 「公開中」フィルタ指定時
+        $response = $this->actingAs($admin)
+            ->get(route('admin.certifications.index', ['status' => CertificationStatus::Published->value]));
+
+        $response->assertOk();
+        $response->assertViewHas('certifications', function ($certifications) use ($publishedCert, $draftCert) {
+            return $certifications->contains('id', $publishedCert->id)
+                && ! $certifications->contains('id', $draftCert->id);
+        });
     }
 }
