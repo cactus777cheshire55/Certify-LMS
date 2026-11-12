@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Http\Certification;
 
+use App\Enums\CertificationStatus;
 use App\Models\Certification;
 use App\Models\CertificationCategory;
 use App\Models\CertificationCoachAssignment;
 use App\Models\User;
-use App\Enums\CertificationStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
