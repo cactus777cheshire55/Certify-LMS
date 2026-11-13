@@ -18,11 +18,13 @@ class StoreRequest extends FormRequest
     public function authorize(): bool
     {
         $certificationId = $this->input('certification_id');
+
         if (! is_string($certificationId)) {
             return false;
         }
 
         $certification = Certification::find($certificationId);
+
         if ($certification === null) {
             return false;
         }
@@ -40,7 +42,7 @@ class StoreRequest extends FormRequest
             'title' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:2000'],
             'order' => ['required', 'integer', 'min:0', 'max:65535'],
-            'passing_score' => ['required', 'integer', 'min:1'],
+            'passing_score' => ['required', 'integer', 'min:1', 'max:100'],
         ];
     }
 

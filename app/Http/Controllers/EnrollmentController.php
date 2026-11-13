@@ -120,6 +120,8 @@ class EnrollmentController extends Controller
             ]);
         }
 
+        $goals = $enrollment->goals()->orderBy('created_at', 'desc')->get();
+
         return view('enrollment.show', [
             'enrollment' => $enrollment,
             'progress' => $progress,
@@ -169,7 +171,7 @@ class EnrollmentController extends Controller
         $action($enrollment, $request->validated());
 
         return redirect()
-            ->route('dashboard.index')
+            ->route('enrollments.show', $enrollment)
             ->with('success', '目標受験日を更新しました。');
     }
 
