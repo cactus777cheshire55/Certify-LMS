@@ -53,6 +53,7 @@ use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
 use App\Http\Controllers\WeakDrillResultController;
+use App\Http\Controllers\Settings\GoogleCalendarController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -589,6 +590,16 @@ Route::middleware(['auth', 'role:coach'])
         Route::patch('{availability}', [SettingsAvailabilityController::class, 'update'])->name('update');
         Route::delete('{availability}', [SettingsAvailabilityController::class, 'destroy'])->name('destroy');
     });
+
+// ============================================================
+// コーチ専用
+// ============================================================
+
+Route::middleware(['auth', 'role:coach'])->prefix('settings')->name('settings.')->group(function (): void {
+    Route::get('/google-calendar/connect', [GoogleCalendarController::class, 'connect'])->name('google-calendar.redirect');
+    Route::get('/google-calendar/callback', [GoogleCalendarController::class, 'callback'])->name('google-calendar.callback');
+    Route::delete('/google-calendar', [GoogleCalendarController::class, 'destroy'])->name('google-calendar.destroy');
+});
 
 // ============================================================
 // 受講生専用ルート(受講中=in_progress のみ通過)
