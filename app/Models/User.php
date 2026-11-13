@@ -151,10 +151,9 @@ class User extends Authenticatable
             'user_id',
             'certification_id',
         )
-            ->using(CertificationCoachAssignment::class)
-            ->withPivot(['id', 'assigned_by_user_id', 'assigned_at', 'unassigned_at'])
-            ->withTimestamps()
-            ->wherePivot('unassigned_at', null);
+        ->using(CertificationCoachAssignment::class)
+        ->wherePivotNull('unassigned_at') //【B-B-15 修正】現在担当中の資格のみに限定
+        ->withPivot('id', 'assigned_by_user_id', 'assigned_at', 'unassigned_at');
     }
 
     /**

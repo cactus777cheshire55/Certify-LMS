@@ -170,9 +170,21 @@ class Enrollment extends Model
     {
         return match ($user->role) {
             UserRole::Admin => $query,
-            UserRole::Coach => $query,
+            UserRole::Coach => $query->whereHas('certification.coaches', function ($q) use ($user) {
+                $q->where('users.id', $user->id); // 担当コーチに自分が含まれるものだけに絞り込む
+            }),
             UserRole::Student => $query->where('user_id', $user->id),
             default => $query->whereRaw('1 = 0'),
         };
+    }
+
+    public function goals(): HasMany
+    {
+        return $this->hasMany(EnrollmentGoal::class);
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(EnrollmentNote::class);
     }
 }

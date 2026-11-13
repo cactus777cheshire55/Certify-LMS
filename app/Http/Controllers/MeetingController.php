@@ -230,24 +230,25 @@ class MeetingController extends Controller
         RefundQuotaAction $refundAction,
     ): RedirectResponse {
         $this->authorize('cancel', $meeting);
-
         $actor = auth()->user();
 
-        DB::transaction(function () use ($meeting, $actor) {
+        DB::transaction(function () use ($meeting, $actor, $refundAction) { // $refundAction を use に追加
             $locked = Meeting::query()->whereKey($meeting->id)->lockForUpdate()->first();
+
             if ($locked === null || $locked->status !== MeetingStatus::Reserved) {
                 throw MeetingStatusTransitionException::forCancel();
             }
-
             if ($locked->scheduled_at->lessThanOrEqualTo(now())) {
                 throw new MeetingAlreadyStartedException;
             }
-
             $locked->update([
                 'status' => MeetingStatus::Canceled->value,
                 'canceled_by_user_id' => $actor->id,
                 'canceled_at' => now(),
             ]);
+
+            // 返却処理の呼び出しを追加（受講生と面談IDを渡す）
+            ($refundAction)($locked->student, $locked->id);
         });
 
         return redirect()
