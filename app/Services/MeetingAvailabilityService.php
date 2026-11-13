@@ -9,32 +9,25 @@ use App\Exceptions\Mentoring\MeetingOutOfAvailabilityException;
 use App\Models\Certification;
 use App\Models\CoachAvailability;
 use App\Models\Meeting;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
-/**
- * 担当コーチ集合の面談可能時間枠を 60 分単位で展開し、空きスロットを集計する Service。
- *
- * 受講生の予約画面が「該当資格の担当コーチ全員の有効枠 Union」を 1 日単位で取得し、
- * 既存予約済時刻 を除外して各スロットの「予約可能なコーチ数」を返す。受講生にコーチ個別は提示せず、
- * 予約確定時にコーチを自動割当する。
- */
 final class MeetingAvailabilityService
 {
-    /**
-     * 指定 Certification の担当コーチ集合について、指定日 1 日分の 60 分単位空きスロットを返す。
-     *
-     * 1 リクエストあたり availability 1 クエリ + meetings 1 クエリ で完結させる。
-     *
-     * @return Collection<int, array{slot_start: Carbon, slot_end: Carbon, available_coach_count: int}>
-     */
+    public function __construct(
+        private readonly GoogleCalendarService $googleCalendarService,
+    ) {}
+
     public function slotsForCertification(Certification $certification, Carbon $date): Collection
     {
-        $dayStart = $date->copy()->startOfDay();
-        $dayEnd = $date->copy()->endOfDay();
+        $tz = config('app.timezone', 'Asia/Tokyo');
+        $dayStart = $date->copy()->setTimezone($tz)->startOfDay();
+        $dayEnd = $date->copy()->setTimezone($tz)->endOfDay();
         $dayOfWeek = $date->dayOfWeek;
 
         $coaches = $certification->coaches()->get();
+
         if ($coaches->isEmpty()) {
             return collect();
         }
@@ -53,24 +46,49 @@ final class MeetingAvailabilityService
             ->whereIn('status', [MeetingStatus::Reserved->value, MeetingStatus::Completed->value])
             ->get(['coach_id', 'scheduled_at']);
 
-        // 予約済スロットを (coach_id => Set<H:i>) で索引化
         $bookedByCoach = $existingMeetings
             ->groupBy('coach_id')
             ->map(fn ($rows) => $rows->map(fn (Meeting $m) => $m->scheduled_at->format('H:i'))->all());
 
-        /** @var array<string, int> $slotCounts スロット開始時刻(H:i) → available coach 数 */
+        // 各コーチの Google Calendar Busy スロットを取得
+        $googleBusyByCoach = [];
+        foreach ($coaches as $coach) {
+            $googleBusyByCoach[$coach->id] = $this->googleCalendarService->getBusySlots($coach, $dayStart, $dayEnd);
+        }
+
         $slotCounts = [];
 
         foreach ($availabilities as $availability) {
-            $slot = Carbon::parse($date->format('Y-m-d').' '.$availability->start_time);
-            $end = Carbon::parse($date->format('Y-m-d').' '.$availability->end_time);
+            $slot = Carbon::parse($date->format('Y-m-d').' '.$availability->start_time, $tz);
+            $end = Carbon::parse($date->format('Y-m-d').' '.$availability->end_time, $tz);
 
             while ($slot->copy()->addHour() <= $end) {
                 $slotKey = $slot->format('H:i');
                 $coachId = $availability->coach_id;
                 $booked = $bookedByCoach[$coachId] ?? [];
 
-                if (! in_array($slotKey, $booked, true)) {
+                $isLmsBooked = in_array($slotKey, $booked, true);
+
+                $isGoogleBusy = false;
+                $busySlots = $googleBusyByCoach[$coachId] ?? [];
+
+                if (! empty($busySlots)) {
+                    $slotStart = $slot->copy();
+                    $slotEnd = $slotStart->copy()->addHour();
+
+                    foreach ($busySlots as $busy) {
+                        // タイムゾーンを一致させて比較
+                        $busyStart = Carbon::parse($busy['start'])->setTimezone($tz);
+                        $busyEnd = Carbon::parse($busy['end'])->setTimezone($tz);
+
+                        if ($slotStart->lt($busyEnd) && $slotEnd->gt($busyStart)) {
+                            $isGoogleBusy = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (! $isLmsBooked && ! $isGoogleBusy) {
                     $slotCounts[$slotKey] = ($slotCounts[$slotKey] ?? 0) + 1;
                 }
 
@@ -80,8 +98,8 @@ final class MeetingAvailabilityService
 
         ksort($slotCounts);
 
-        return collect($slotCounts)->map(function (int $count, string $time) use ($date) {
-            $start = Carbon::parse($date->format('Y-m-d').' '.$time);
+        return collect($slotCounts)->map(function (int $count, string $time) use ($date, $tz) {
+            $start = Carbon::parse($date->format('Y-m-d').' '.$time, $tz);
 
             return [
                 'slot_start' => $start,
@@ -91,12 +109,6 @@ final class MeetingAvailabilityService
         })->values();
     }
 
-    /**
-     * 指定 scheduled_at が certification 担当コーチ集合の有効枠内かを検証する。
-     * 枠外なら MeetingOutOfAvailabilityException を throw する。
-     *
-     * @throws MeetingOutOfAvailabilityException
-     */
     public function validateSlot(Certification $certification, Carbon $scheduledAt): void
     {
         $slots = $this->slotsForCertification($certification, $scheduledAt->copy()->startOfDay());
