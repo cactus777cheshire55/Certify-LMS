@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Admin\AnnouncementController;
+use App\Http\Controllers\Admin\MeetingPackController;
+use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\QaThreadController as AdminQaThreadController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\BrowseController;
 use App\Http\Controllers\CertificationCatalogController;
@@ -13,7 +17,9 @@ use App\Http\Controllers\ChatRoomController;
 use App\Http\Controllers\ContentSearchController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\EnrollmentGoalController;
 use App\Http\Controllers\EnrollmentManagementController;
+use App\Http\Controllers\EnrollmentNoteController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LearningHourTargetController;
 use App\Http\Controllers\MeetingController;
@@ -24,7 +30,10 @@ use App\Http\Controllers\MockExamController;
 use App\Http\Controllers\MockExamQuestionController;
 use App\Http\Controllers\MockExamSessionController;
 use App\Http\Controllers\MockExamSessionMonitorController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PartController;
+use App\Http\Controllers\QaReplyController;
+use App\Http\Controllers\QaThreadController;
 use App\Http\Controllers\QuestionCategoryController;
 use App\Http\Controllers\QuizHistoryController;
 use App\Http\Controllers\QuizStatsController;
@@ -37,10 +46,15 @@ use App\Http\Controllers\SectionQuestionController;
 use App\Http\Controllers\SectionQuizController;
 use App\Http\Controllers\SectionQuizResultController;
 use App\Http\Controllers\Settings\AvailabilityController as SettingsAvailabilityController;
+use App\Http\Controllers\Settings\AvatarController;
+use App\Http\Controllers\Settings\PasswordController;
+use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
 use App\Http\Controllers\WeakDrillResultController;
+use App\Http\Controllers\Settings\GoogleCalendarController;
+use App\Http\Controllers\AiChatController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -73,6 +87,27 @@ Route::middleware('auth')->group(function () {
     Route::get('enrollments/{enrollment}', [EnrollmentController::class, 'show'])
         ->withTrashed()
         ->name('enrollments.show');
+
+    // 通知関連（S-B-04 / S-B-08）
+    Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifications/{notification}', [NotificationController::class, 'show'])->name('notifications.show');
+    Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+
+    // 設定・プロフィール
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::post('avatar', [AvatarController::class, 'store'])->name('avatar.store');
+        Route::delete('avatar', [AvatarController::class, 'destroy'])->name('avatar.destroy');
+        Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+    });
+
+    // 受講生メモ（コーチ / 管理者用）
+    Route::post('enrollments/{enrollment}/notes', [EnrollmentNoteController::class, 'store'])->name('enrollments.notes.store');
+    Route::get('enrollment-notes/{note}/edit', [EnrollmentNoteController::class, 'edit'])->name('enrollment-notes.edit');
+    Route::patch('enrollment-notes/{note}', [EnrollmentNoteController::class, 'update'])->name('enrollment-notes.update');
+    Route::delete('enrollment-notes/{note}', [EnrollmentNoteController::class, 'destroy'])->name('enrollment-notes.destroy');
 });
 
 // ============================================================
@@ -98,6 +133,14 @@ Route::middleware(['auth', 'role:student', 'active-learning'])->group(function (
     // 修了証受領(受講生自己発火、graduated は active-learning でブロックされるため新規受領不可)
     Route::post('enrollments/{enrollment}/receive-certificate', [ReceiveCertificateController::class, 'store'])
         ->name('enrollments.receiveCertificate');
+
+    // 個人目標 CRUD および達成ステータス切替
+    Route::post('enrollments/{enrollment}/goals', [EnrollmentGoalController::class, 'store'])->name('enrollments.goals.store');
+    Route::get('enrollment-goals/{goal}/edit', [EnrollmentGoalController::class, 'edit'])->name('enrollment-goals.edit');
+    Route::patch('enrollment-goals/{goal}', [EnrollmentGoalController::class, 'update'])->name('enrollment-goals.update');
+    Route::delete('enrollment-goals/{goal}', [EnrollmentGoalController::class, 'destroy'])->name('enrollment-goals.destroy');
+    Route::post('enrollment-goals/{goal}/achieve', [EnrollmentGoalController::class, 'markAchieved'])->name('enrollment-goals.markAchieved');
+    Route::delete('enrollment-goals/{goal}/achieve', [EnrollmentGoalController::class, 'unmarkAchieved'])->name('enrollment-goals.unmarkAchieved');
 });
 
 // ============================================================
@@ -192,6 +235,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
         ->name('admin.enrollments.updateExamDate');
     Route::post('enrollments/{enrollment}/fail', [EnrollmentManagementController::class, 'fail'])
         ->name('admin.enrollments.fail');
+
+    // お知らせ配信管理（S-B-08）
+    Route::get('announcements', [AnnouncementController::class, 'index'])->name('admin.announcements.index');
+    Route::get('announcements/create', [AnnouncementController::class, 'create'])->name('admin.announcements.create');
+    Route::post('announcements', [AnnouncementController::class, 'store'])->name('admin.announcements.store');
+    Route::get('announcements/{announcement}', [AnnouncementController::class, 'show'])->name('admin.announcements.show');
 });
 
 // ============================================================
@@ -417,6 +466,33 @@ Route::middleware(['auth', 'role:student,coach', 'active-learning'])->group(func
 });
 
 // ============================================================
+// 受講生・コーチ共有 — 質問掲示板 (qa-board)
+// ============================================================
+Route::middleware(['auth', 'role:student,coach', 'active-learning'])
+    ->prefix('qa-board')
+    ->name('qa-board.')
+    ->group(function () {
+        // スレッド一覧・詳細
+        Route::get('/', [QaThreadController::class, 'index'])->name('index');
+        Route::get('/create', [QaThreadController::class, 'create'])->name('create');
+        Route::post('/', [QaThreadController::class, 'store'])->name('store');
+        Route::get('/{thread}', [QaThreadController::class, 'show'])->name('show');
+        Route::get('/{thread}/edit', [QaThreadController::class, 'edit'])->name('edit');
+        Route::patch('/{thread}', [QaThreadController::class, 'update'])->name('update');
+        Route::delete('/{thread}', [QaThreadController::class, 'destroy'])->name('destroy');
+
+        // 解決状態の切り替え
+        Route::post('/{thread}/resolve', [QaThreadController::class, 'resolve'])->name('resolve');
+        Route::post('/{thread}/unresolve', [QaThreadController::class, 'unresolve'])->name('unresolve');
+
+        // 回答のCRUD
+        Route::post('/{thread}/replies', [QaReplyController::class, 'store'])->name('replies.store');
+        Route::get('/{thread}/replies/{reply}/edit', [QaReplyController::class, 'edit'])->name('replies.edit');
+        Route::patch('/{thread}/replies/{reply}', [QaReplyController::class, 'update'])->name('replies.update');
+        Route::delete('/{thread}/replies/{reply}', [QaReplyController::class, 'destroy'])->name('replies.destroy');
+    });
+
+// ============================================================
 // コーチ専用 — chat 未読あり一覧
 // ============================================================
 Route::middleware(['auth', 'role:coach', 'active-learning'])->group(function () {
@@ -433,6 +509,64 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('chat-rooms/{room}', [ChatRoomController::class, 'show'])
         ->name('admin.chat-rooms.show');
 });
+
+// ============================================================
+// 管理者専用 — 質問掲示板 モデレーション
+// ============================================================
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin/qa-board')
+    ->name('admin.qa-board.')
+    ->group(function () {
+        Route::get('/', [AdminQaThreadController::class, 'index'])->name('index');
+        Route::get('/{thread}', [AdminQaThreadController::class, 'show'])->name('show');
+        Route::delete('/{thread}', [AdminQaThreadController::class, 'destroy'])->name('destroy');
+        Route::delete('/{thread}/replies/{reply}', [AdminQaThreadController::class, 'destroyReply'])->name('replies.destroy');
+    });
+
+// ============================================================
+// 管理者専用 — 面談パック
+// ============================================================
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin/meeting-packs')
+    ->name('admin.meeting-packs.')
+    ->group(function () {
+        // CRUD 操作
+        Route::get('/', [MeetingPackController::class, 'index'])->name('index');
+        Route::get('/create', [MeetingPackController::class, 'create'])->name('create');
+        Route::post('/', [MeetingPackController::class, 'store'])->name('store');
+        Route::get('/{meetingPack}', [MeetingPackController::class, 'show'])->name('show');
+        Route::get('/{meetingPack}/edit', [MeetingPackController::class, 'edit'])->name('edit');
+        Route::patch('/{meetingPack}', [MeetingPackController::class, 'update'])->name('update');
+        Route::delete('/{meetingPack}', [MeetingPackController::class, 'destroy'])->name('destroy');
+
+        // 状態遷移アクション
+        Route::post('/{meetingPack}/publish', [MeetingPackController::class, 'publish'])->name('publish');
+        Route::post('/{meetingPack}/archive', [MeetingPackController::class, 'archive'])->name('archive');
+        Route::post('/{meetingPack}/unarchive', [MeetingPackController::class, 'unarchive'])->name('unarchive');
+    });
+
+// ============================================================
+// 管理者専用 — 受講プラン
+// ============================================================
+
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin/plans')
+    ->name('admin.plans.')
+    ->group(function () {
+        // CRUD 操作
+        Route::get('/', [PlanController::class, 'index'])->name('index');
+        Route::get('/create', [PlanController::class, 'create'])->name('create');
+        Route::post('/', [PlanController::class, 'store'])->name('store');
+        Route::get('/{plan}', [PlanController::class, 'show'])->name('show');
+        Route::get('/{plan}/edit', [PlanController::class, 'edit'])->name('edit');
+        Route::put('/{plan}', [PlanController::class, 'update'])->name('update');
+        Route::delete('/{plan}', [PlanController::class, 'destroy'])->name('destroy');
+
+        // 状態遷移アクション
+        Route::post('/{plan}/publish', [PlanController::class, 'publish'])->name('publish');
+        Route::post('/{plan}/archive', [PlanController::class, 'archive'])->name('archive');
+        Route::post('/{plan}/unarchive', [PlanController::class, 'unarchive'])->name('unarchive');
+    });
 
 // ============================================================
 // コーチ専用ルート — 担当資格受講生管理 / 面談管理 / メモ記録
@@ -459,11 +593,33 @@ Route::middleware(['auth', 'role:coach'])
     });
 
 // ============================================================
+// コーチ専用
+// ============================================================
+
+Route::middleware(['auth', 'role:coach'])->prefix('settings')->name('settings.')->group(function (): void {
+    Route::get('/google-calendar/connect', [GoogleCalendarController::class, 'connect'])->name('google-calendar.redirect');
+    Route::get('/google-calendar/callback', [GoogleCalendarController::class, 'callback'])->name('google-calendar.callback');
+    Route::delete('/google-calendar', [GoogleCalendarController::class, 'destroy'])->name('google-calendar.destroy');
+});
+
+// ============================================================
 // 受講生専用ルート(受講中=in_progress のみ通過)
 // ============================================================
 Route::middleware(['auth', 'role:student', 'active-learning'])->prefix('meeting-quota')->name('meeting-quota.')->group(function () {
     // 面談回数履歴
     Route::get('history', [MeetingQuotaHistoryController::class, 'index'])->name('history');
+});
+
+// ============================================================
+// AI 相談機能 (S-A-02)
+// ============================================================
+Route::middleware(['auth', 'role:student', 'active-learning'])->prefix('ai-chat')->name('ai-chat.')->group(function () {
+    Route::get('/', [AiChatController::class, 'index'])->name('index');
+    Route::post('/conversations', [AiChatController::class, 'storeConversation'])->name('conversations.store');
+    Route::get('/conversations/{conversation}', [AiChatController::class, 'showConversation'])->name('conversations.show');
+    Route::patch('/conversations/{conversation}', [AiChatController::class, 'updateConversation'])->name('conversations.update');
+    Route::delete('/conversations/{conversation}', [AiChatController::class, 'destroyConversation'])->name('conversations.destroy');
+    Route::post('/conversations/{conversation}/messages', [AiChatController::class, 'storeMessage'])->name('conversations.messages.store');
 });
 
 // ============================================================

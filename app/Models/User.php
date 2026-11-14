@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -151,10 +152,9 @@ class User extends Authenticatable
             'user_id',
             'certification_id',
         )
-            ->using(CertificationCoachAssignment::class)
-            ->withPivot(['id', 'assigned_by_user_id', 'assigned_at', 'unassigned_at'])
-            ->withTimestamps()
-            ->wherePivot('unassigned_at', null);
+        ->using(CertificationCoachAssignment::class)
+        ->wherePivotNull('unassigned_at') //【B-B-15 修正】現在担当中の資格のみに限定
+        ->withPivot('id', 'assigned_by_user_id', 'assigned_at', 'unassigned_at');
     }
 
     /**
@@ -259,6 +259,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Google カレンダー連携の認証情報。
+     *
+     * @return HasOne<GoogleCredential, $this>
+     */
+    public function googleCredential(): HasOne
+    {
+        return $this->hasOne(GoogleCredential::class);
+    }
+
+    /**
      * 参加している ChatRoom の中間テーブルレコード一覧。
      *
      * @return HasMany<ChatMember, $this>
@@ -276,6 +286,16 @@ class User extends Authenticatable
     public function sentChatMessages(): HasMany
     {
         return $this->hasMany(ChatMessage::class, 'sender_user_id');
+    }
+
+    /**
+     * AI 相談の会話履歴一覧。
+     *
+     * @return HasMany<AiChatConversation, $this>
+     */
+    public function aiChatConversations(): HasMany
+    {
+        return $this->hasMany(AiChatConversation::class);
     }
 
     /**
@@ -309,5 +329,21 @@ class User extends Authenticatable
     public function scopeActive(Builder $query): Builder
     {
         return $query->whereIn('status', [UserStatus::InProgress, UserStatus::Graduated]);
+    }
+
+    /**
+     * 受講生ロールかどうかを判定する。
+     */
+    public function isStudent(): bool
+    {
+        return $this->role === UserRole::Student;
+    }
+
+    /**
+     * 受講中(in_progress)ステータスかどうかを判定する。
+     */
+    public function isInProgress(): bool
+    {
+        return $this->status === UserStatus::InProgress;
     }
 }
