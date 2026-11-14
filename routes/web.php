@@ -54,6 +54,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
 use App\Http\Controllers\WeakDrillResultController;
 use App\Http\Controllers\Settings\GoogleCalendarController;
+use App\Http\Controllers\AiChatController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -607,6 +608,18 @@ Route::middleware(['auth', 'role:coach'])->prefix('settings')->name('settings.')
 Route::middleware(['auth', 'role:student', 'active-learning'])->prefix('meeting-quota')->name('meeting-quota.')->group(function () {
     // 面談回数履歴
     Route::get('history', [MeetingQuotaHistoryController::class, 'index'])->name('history');
+});
+
+// ============================================================
+// AI 相談機能 (S-A-02)
+// ============================================================
+Route::middleware(['auth', 'role:student', 'active-learning'])->prefix('ai-chat')->name('ai-chat.')->group(function () {
+    Route::get('/', [AiChatController::class, 'index'])->name('index');
+    Route::post('/conversations', [AiChatController::class, 'storeConversation'])->name('conversations.store');
+    Route::get('/conversations/{conversation}', [AiChatController::class, 'showConversation'])->name('conversations.show');
+    Route::patch('/conversations/{conversation}', [AiChatController::class, 'updateConversation'])->name('conversations.update');
+    Route::delete('/conversations/{conversation}', [AiChatController::class, 'destroyConversation'])->name('conversations.destroy');
+    Route::post('/conversations/{conversation}/messages', [AiChatController::class, 'storeMessage'])->name('conversations.messages.store');
 });
 
 // ============================================================

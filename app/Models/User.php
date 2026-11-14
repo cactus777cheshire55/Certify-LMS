@@ -289,6 +289,16 @@ class User extends Authenticatable
     }
 
     /**
+     * AI 相談の会話履歴一覧。
+     *
+     * @return HasMany<AiChatConversation, $this>
+     */
+    public function aiChatConversations(): HasMany
+    {
+        return $this->hasMany(AiChatConversation::class);
+    }
+
+    /**
      * Laravel フレームワーク側のシグナル(`Illuminate\Foundation\Auth\User::sendPasswordResetNotification($token)`)
      * との LSP 整合のため、引数に型宣言を付与しない(親クラスが parameter type なしで宣言しているため)。
      *
@@ -319,5 +329,21 @@ class User extends Authenticatable
     public function scopeActive(Builder $query): Builder
     {
         return $query->whereIn('status', [UserStatus::InProgress, UserStatus::Graduated]);
+    }
+
+    /**
+     * 受講生ロールかどうかを判定する。
+     */
+    public function isStudent(): bool
+    {
+        return $this->role === UserRole::Student;
+    }
+
+    /**
+     * 受講中(in_progress)ステータスかどうかを判定する。
+     */
+    public function isInProgress(): bool
+    {
+        return $this->status === UserStatus::InProgress;
     }
 }
