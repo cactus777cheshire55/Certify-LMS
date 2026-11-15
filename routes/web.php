@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\QaThreadController as AdminQaThreadController;
 use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\BrowseController;
+use App\Http\Controllers\CertificateDownloadController;
 use App\Http\Controllers\CertificationCatalogController;
 use App\Http\Controllers\CertificationCategoryController;
 use App\Http\Controllers\CertificationCoachAssignmentController;
@@ -90,6 +91,11 @@ Route::middleware('auth')->group(function () {
     Route::get('enrollments/{enrollment}', [EnrollmentController::class, 'show'])
         ->withTrashed()
         ->name('enrollments.show');
+
+    // 修了証 PDF ダウンロード(3 ロール共有: student=本人 / coach=担当資格 / admin=全件)。
+    // 修了証は永続資産のため active-learning は掛けず、卒業ステータスの受講生もダウンロード可。
+    Route::get('certificates/{certificate}/download', [CertificateDownloadController::class, 'download'])
+        ->name('certificates.download');
 
     // 通知関連（S-B-04 / S-B-08）
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
