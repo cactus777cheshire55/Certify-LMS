@@ -82,6 +82,7 @@ class AiChatController extends Controller
                     // 200 = 既存会話の再開（Widget は data.conversation.id を参照する）
                     return response()->json($this->conversationPayload($existing), 200);
                 }
+
                 return redirect()->route('ai-chat.conversations.show', $existing);
             }
         }
@@ -112,11 +113,10 @@ class AiChatController extends Controller
                 'status' => AiChatMessageStatus::Completed,
             ]);
 
-            //戻り値を $assistantMessage に代入する
+            // 戻り値を $assistantMessage に代入する
             $assistantMessage = $geminiService->ask($conversation, $initialMessageText);
             $conversation->update(['last_message_at' => now()]);
         }
-
 
         if ($request->wantsJson()) {
             // 第2・第3引数に渡す
@@ -135,8 +135,7 @@ class AiChatController extends Controller
         AiChatConversation $conversation,
         ?AiChatMessage $userMessage = null,
         ?AiChatMessage $assistantMessage = null,
-    ): array
-    {
+    ): array {
         return [
             'conversation' => [
                 'id' => $conversation->id,
@@ -249,9 +248,9 @@ class AiChatController extends Controller
         $todaySentCount = AiChatMessage::whereHas('conversation', function ($query) use ($user) {
             $query->where('user_id', $user->id);
         })
-        ->where('role', AiChatMessageRole::User->value)
-        ->where('created_at', '>=', now()->startOfDay())
-        ->count();
+            ->where('role', AiChatMessageRole::User->value)
+            ->where('created_at', '>=', now()->startOfDay())
+            ->count();
 
         if ($todaySentCount >= $dailyLimit) {
             $limitMessage = "本日の AI 相談上限数（{$dailyLimit} 回）に達しました。明日再度お試しください。";

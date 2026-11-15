@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\MeetingPackController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\QaThreadController as AdminQaThreadController;
+use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\BrowseController;
 use App\Http\Controllers\CertificationCatalogController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\EnrollmentNoteController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LearningHourTargetController;
 use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\MeetingQuotaCheckoutController;
 use App\Http\Controllers\MeetingQuotaHistoryController;
 use App\Http\Controllers\MockExamAnswerController;
 use App\Http\Controllers\MockExamCatalogController;
@@ -47,14 +49,15 @@ use App\Http\Controllers\SectionQuizController;
 use App\Http\Controllers\SectionQuizResultController;
 use App\Http\Controllers\Settings\AvailabilityController as SettingsAvailabilityController;
 use App\Http\Controllers\Settings\AvatarController;
+use App\Http\Controllers\Settings\GoogleCalendarController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SettingsDefaultEnrollmentController;
+use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeakDrillController;
 use App\Http\Controllers\WeakDrillResultController;
-use App\Http\Controllers\Settings\GoogleCalendarController;
-use App\Http\Controllers\AiChatController;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -187,6 +190,24 @@ Route::middleware(['auth', 'role:student', 'active-learning'])
         Route::delete('enrollments/{enrollment}/hour-target', [LearningHourTargetController::class, 'destroy'])
             ->name('hourTarget.destroy');
     });
+
+// ============================================================
+// 受講生専用の購入ルート
+// ============================================================
+Route::middleware(['auth', 'role:student', 'active-learning'])
+    ->prefix('meeting-quota')
+    ->group(function () {
+        Route::get('/checkout', [MeetingQuotaCheckoutController::class, 'select'])
+            ->name('meeting-quota.checkout.select');
+        Route::post('/checkout', [MeetingQuotaCheckoutController::class, 'store'])
+            ->name('meeting-quota.checkout.create');
+        Route::get('/success', [MeetingQuotaCheckoutController::class, 'success'])
+            ->name('meeting-quota.success');
+    });
+
+Route::post('/webhooks/stripe', StripeWebhookController::class)
+    ->name('webhooks.stripe')
+    ->withoutMiddleware([VerifyCsrfToken::class]);
 
 // ============================================================
 // admin 専用ルート

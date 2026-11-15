@@ -21,7 +21,7 @@ final class GoogleCalendarControllerTest extends TestCase
     }
 
     /** @test */
-    public function コーチは認証URLへリダイレクトされる(): void
+    public function コーチは認証_ur_lへリダイレクトされる(): void
     {
         $coach = User::factory()->coach()->create();
 

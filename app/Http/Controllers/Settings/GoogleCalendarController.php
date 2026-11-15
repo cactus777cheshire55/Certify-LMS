@@ -35,7 +35,7 @@ final class GoogleCalendarController extends Controller
             'state' => $state,
         ]);
 
-        return redirect()->away('https://accounts.google.com/o/oauth2/v2/auth?' . $query);
+        return redirect()->away('https://accounts.google.com/o/oauth2/v2/auth?'.$query);
     }
 
     /**
