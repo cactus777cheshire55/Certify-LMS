@@ -12,6 +12,7 @@ class StoreMessageRequest extends FormRequest
     public function authorize(): bool
     {
         $conversation = $this->route('conversation');
+
         return $conversation instanceof AiChatConversation
             && $this->user()?->can('sendMessage', $conversation);
     }

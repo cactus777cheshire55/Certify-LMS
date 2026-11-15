@@ -9,7 +9,6 @@ use App\Exceptions\Mentoring\MeetingOutOfAvailabilityException;
 use App\Models\Certification;
 use App\Models\CoachAvailability;
 use App\Models\Meeting;
-use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 

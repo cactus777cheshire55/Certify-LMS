@@ -27,12 +27,12 @@ use App\Services\MeetingQuotaService;
 use App\UseCases\MeetingQuota\ConsumeQuotaAction;
 use App\UseCases\MeetingQuota\RefundQuotaAction;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
-use Illuminate\Database\Eloquent\Collection;
 
 /**
  * 1on1 面談予約 (Meeting) の HTTP エントリポイント。

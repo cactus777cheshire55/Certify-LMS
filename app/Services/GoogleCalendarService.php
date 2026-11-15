@@ -46,6 +46,7 @@ class GoogleCalendarService
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+
                 return [];
             }
 
@@ -73,6 +74,7 @@ class GoogleCalendarService
             return $busySlots;
         } catch (\Throwable $e) {
             Log::error('GoogleCalendarService::getBusySlots exception', ['error' => $e->getMessage()]);
+
             return [];
         }
     }
@@ -121,12 +123,14 @@ class GoogleCalendarService
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+
                 return null;
             }
 
             return $response->json('id');
         } catch (\Throwable $e) {
             Log::error('GoogleCalendarService::createMeetingEvent exception', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -157,6 +161,7 @@ class GoogleCalendarService
             return $response->successful();
         } catch (\Throwable $e) {
             Log::error('GoogleCalendarService::deleteMeetingEvent exception', ['error' => $e->getMessage()]);
+
             return false;
         }
     }
@@ -181,6 +186,7 @@ class GoogleCalendarService
 
             if ($response->failed()) {
                 Log::error('Google access token refresh failed', ['body' => $response->body()]);
+
                 return null;
             }
 
@@ -196,6 +202,7 @@ class GoogleCalendarService
             return $newAccessToken;
         } catch (\Throwable $e) {
             Log::error('GoogleCalendarService token refresh exception', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
