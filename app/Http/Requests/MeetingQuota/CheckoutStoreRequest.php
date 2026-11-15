@@ -19,7 +19,7 @@ class CheckoutStoreRequest extends FormRequest
         return [
             'meeting_pack_id' => [
                 'required',
-                'string', 
+                'string',
                 Rule::exists('meeting_packs', 'id')->where(function ($query) {
                     $query->where('status', 'published');
                 }),

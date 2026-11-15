@@ -14,6 +14,7 @@ use App\Models\Certification;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatusLog;
 use App\Models\User;
+use App\Services\CertificatePdfService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -29,7 +30,9 @@ use Illuminate\Support\Str;
  *
  * 1. **graduated 受講生に過去 Enrollment + Certificate**: 各 graduated 受講生に 1 件の passed Enrollment を作り、
  *    Certificate を発行する。Certificate は永続データなので卒業後も DL 可能(プラン機能はロックされるが修了証 DL は可)。
- * 2. **EnrollmentStatusLog 同梱**: learning → passed の遷移ログを併せて INSERT し、状態遷移履歴が成立する状態にする。
+ * 2. **PDF 実体まで生成**: CertificatePdfService で `private` disk に PDF を保存し、ダウンロード動作確認ができる状態にする。
+ *    資格は担当コーチが分かれるよう 1 件おきに割り当てる(担当外コーチの 403 確認用)。
+ * 3. **EnrollmentStatusLog 同梱**: learning → passed の遷移ログを併せて INSERT し、状態遷移履歴が成立する状態にする。
  *
  * 依存順序: `UserSeeder` → `PlanSeeder` → `CertificationSeeder` → `EnrollmentSeeder` → 本 Seeder。
  */
@@ -61,7 +64,10 @@ final class CertificateSeeder extends Seeder
         }
 
         foreach ($graduatedStudents as $i => $student) {
-            $certification = $publishedCertifications->get($i % $publishedCertifications->count());
+            // 1 件おきに資格を割り当て、担当コーチの異なる修了証を揃える
+            // (CertificationSeeder の割当では 基本情報=coach1 のみ / TOEIC=両コーチ / PMP=coach2 のみ)。
+            // 本人 / 担当コーチ / 管理者の DL 成功と、担当外コーチの 403 を双方向に確認できる。
+            $certification = $publishedCertifications->get(($i * 2) % $publishedCertifications->count());
             if ($certification === null) {
                 continue;
             }
@@ -128,5 +134,8 @@ final class CertificateSeeder extends Seeder
                 'issued_at' => $issuedAt,
             ])
             ->create();
+
+        // PDF 実体もプライベート保管領域に生成し、ダウンロード動作確認ができる状態にする
+        app(CertificatePdfService::class)->generate($certificate);
     }
 }
