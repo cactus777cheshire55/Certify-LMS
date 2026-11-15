@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 /**
  * プラン受講中のユーザーを表す Model。
@@ -27,7 +28,7 @@ use Illuminate\Notifications\Notifiable;
  */
 class User extends Authenticatable
 {
-    use HasFactory, HasUlids, Notifiable, SoftDeletes;
+    use HasFactory, HasUlids, Notifiable, SoftDeletes,HasApiTokens;
 
     protected $fillable = [
         'name',
