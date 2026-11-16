@@ -5,56 +5,43 @@ declare(strict_types=1);
 namespace App\UseCases\MockExamSession;
 
 use App\Enums\MockExamSessionStatus;
-use App\Models\MockExamAnswer;
-use App\Models\MockExamQuestionOption;
 use App\Models\MockExamSession;
 
 /**
- * 受験セッションを採点する内部ユースケース。
- *
- * 必ず SubmitAction 内の `DB::transaction()` から呼ばれる前提で、自前のトランザクションは持たない。
- * 採点ロジック: 各 MockExamAnswer の selected_option_id を引いて、対応する MockExamQuestionOption の is_correct で is_correct を確定する。
+ * 提出された MockExamSession の個別解答を採点し、
+ * 得点率（0〜100%）・合否判定・ステータス更新を行う Action。
  */
 final class GradeAction
 {
-    public function __invoke(MockExamSession $session): void
+    public function __invoke(MockExamSession $session): MockExamSession
     {
-        $answers = MockExamAnswer::query()
-            ->where('mock_exam_session_id', $session->id)
-            ->get();
-
-        $optionIds = $answers
-            ->pluck('selected_option_id')
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-
-        $options = MockExamQuestionOption::query()
-            ->whereIn('id', $optionIds)
-            ->get()
-            ->keyBy('id');
-
+        // 1. 各解答の採点と正解数のカウント
+        $answers = $session->answers()->with('selectedOption')->get();
         $totalCorrect = 0;
-        foreach ($answers as $answer) {
-            $isCorrect = false;
-            if ($answer->selected_option_id !== null && $options->has($answer->selected_option_id)) {
-                $isCorrect = (bool) $options[$answer->selected_option_id]->is_correct;
-            }
 
-            $answer->update(['is_correct' => $isCorrect]);
+        foreach ($answers as $answer) {
+            $isCorrect = $answer->selectedOption?->is_correct ?? false;
+            $answer->update([
+                'is_correct' => $isCorrect,
+            ]);
 
             if ($isCorrect) {
                 $totalCorrect++;
             }
         }
 
+        // 2. 得点率の計算（0〜100 の百分率スケール、小数第2位まで保持）
+        // 修正前: ($totalCorrect / $totalQuestions) -> 0.80 (0〜1スケール)
+        // 修正後: round(($totalCorrect / $totalQuestions) * 100, 2) -> 80.00 (0〜100スケール)
         $totalQuestions = $session->total_questions;
         $scorePercentage = $totalQuestions > 0
-            ? round($totalCorrect / $totalQuestions, 2)
-            : 0.0;
-        $pass = $scorePercentage >= (float) $session->passing_score_snapshot;
+            ? round(($totalCorrect / $totalQuestions) * 100, 2)
+            : 0.00;
 
+        // 3. 合格判定（0〜100 スケールの合格基準点と比較）
+        $pass = $scorePercentage >= $session->passing_score_snapshot;
+
+        // 4. セッション結果の保存・ステータス更新
         $session->update([
             'status' => MockExamSessionStatus::Graded->value,
             'graded_at' => now(),
@@ -62,5 +49,7 @@ final class GradeAction
             'score_percentage' => $scorePercentage,
             'pass' => $pass,
         ]);
+
+        return $session;
     }
 }

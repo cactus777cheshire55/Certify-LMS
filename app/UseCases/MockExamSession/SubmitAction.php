@@ -39,14 +39,17 @@ final class SubmitAction
                 throw new MockExamSessionNotInProgressException;
             }
 
+            // セッションステータスを提出済みに更新
             $session->update([
                 'status' => MockExamSessionStatus::Submitted->value,
                 'submitted_at' => now(),
             ]);
 
+            // 採点処理（GradeAction）を実行
             ($this->grade)($session);
-            $session->refresh();
 
+            // 最新状態を取得して学習タームを再計算
+            $session->refresh();
             $this->termJudgement->recalculate($session->enrollment);
 
             return $session;
