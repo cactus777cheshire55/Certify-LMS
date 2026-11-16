@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\UseCases\Learning;
 
+use App\Enums\CertificationStatus;
 use App\Enums\ContentStatus;
 use App\Models\Section;
 use App\Models\SectionProgress;
@@ -31,12 +32,17 @@ final class ShowSectionAction
     public function __invoke(Section $section, User $student): array
     {
         $section->loadMissing('chapter.part.certification');
+
         $chapter = $section->chapter;
         $part = $chapter?->part;
+        $certification = $part?->certification;
 
-        if ($section->status !== ContentStatus::Published
+        if (
+            $section->status !== ContentStatus::Published
             || $chapter === null || $chapter->status !== ContentStatus::Published
-            || $part === null || $part->status !== ContentStatus::Published) {
+            || $part === null || $part->status !== ContentStatus::Published
+            || $certification === null || $certification->status !== CertificationStatus::Published
+        ) {
             throw new NotFoundHttpException;
         }
 
@@ -46,9 +52,11 @@ final class ShowSectionAction
             ->get();
 
         $currentIndex = $siblingSections->search(fn ($s) => $s->id === $section->id);
+
         $prevSection = $currentIndex !== false && $currentIndex > 0
             ? $siblingSections->get($currentIndex - 1)
             : null;
+
         $nextSection = $currentIndex !== false && $currentIndex < $siblingSections->count() - 1
             ? $siblingSections->get($currentIndex + 1)
             : null;
@@ -66,6 +74,7 @@ final class ShowSectionAction
         }
 
         $hasSectionQuestions = $section->questions()->exists();
+
         $sectionQuizSummary = $hasSectionQuestions
             ? $this->scoreService->summarize($student, $section)
             : null;

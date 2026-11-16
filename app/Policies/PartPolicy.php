@@ -21,18 +21,14 @@ class PartPolicy
 {
     public function viewAny(User $auth, Certification $certification): bool
     {
-        return match ($auth->role) {
-            UserRole::Admin => true,
-            UserRole::Coach => false,
-            default => false,
-        };
+        return $this->canManage($auth, $certification);
     }
 
     public function view(User $auth, Part $part): bool
     {
         return match ($auth->role) {
             UserRole::Admin => true,
-            UserRole::Coach => false,
+            UserRole::Coach => $this->assignedCoach($auth, $part->certification),
             default => $part->status === ContentStatus::Published,
         };
     }
@@ -71,7 +67,7 @@ class PartPolicy
     {
         return match ($auth->role) {
             UserRole::Admin => true,
-            UserRole::Coach => false,
+            UserRole::Coach => $this->assignedCoach($auth, $certification),
             default => false,
         };
     }

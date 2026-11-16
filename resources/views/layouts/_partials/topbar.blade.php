@@ -67,7 +67,9 @@
                 </span>
             </button>
 
-            @include('notifications._partials.notification-popover')
+            @if($user && $user->role !== \App\Enums\UserRole::Admin)
+                @include('notifications._partials.notification-popover')
+            @endif
         </div>
     @endif
 

@@ -36,11 +36,10 @@ class FailExpiredEnrollmentsCommand extends Command
             ->whereNotNull('exam_date')
             ->whereDate('exam_date', '<', now()->toDateString())
             ->orderBy('id')
-            ->chunk(100, function ($enrollments) use ($statusChanger, $defaultEnrollmentService, &$count): void {
+            ->chunkById(100, function ($enrollments) use ($statusChanger, $defaultEnrollmentService, &$count): void { // ★ chunk -> chunkById
                 foreach ($enrollments as $enrollment) {
                     DB::transaction(function () use ($enrollment, $statusChanger, $defaultEnrollmentService) {
                         $enrollment->update(['status' => EnrollmentStatus::Failed->value]);
-
                         $statusChanger->recordStatusChange(
                             $enrollment,
                             fromStatus: EnrollmentStatus::Learning,
@@ -48,7 +47,6 @@ class FailExpiredEnrollmentsCommand extends Command
                             changedBy: null,
                             reason: '試験日超過による自動失敗',
                         );
-
                         $defaultEnrollmentService->resolveAfterStatusChange(
                             $enrollment->user,
                             $enrollment,

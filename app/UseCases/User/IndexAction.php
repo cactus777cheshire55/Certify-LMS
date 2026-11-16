@@ -25,7 +25,10 @@ final class IndexAction
     ): LengthAwarePaginator {
         $query = User::query();
 
-        $query->withTrashed();
+        // status=withdrawn 指定時のみ soft delete 済の User を含める
+        if ($status === UserStatus::Withdrawn) {
+            $query->withTrashed();
+        }
 
         if ($keyword !== null && $keyword !== '') {
             $query->where(function ($q) use ($keyword) {
