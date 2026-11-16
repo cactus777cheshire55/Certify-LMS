@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Http\Api;
 
-use App\Models\User;
 use App\Enums\UserRole;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -15,7 +15,7 @@ class NotificationControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_未ログインユーザーは通知APIにアクセスできない(): void
+    public function test_未ログインユーザーは通知_ap_iにアクセスできない(): void
     {
         $response = $this->getJson('/api/v1/notifications');
         $response->assertUnauthorized();
@@ -28,7 +28,7 @@ class NotificationControllerTest extends TestCase
 
         // 通知データの作成
         $user->notifications()->create([
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
             'type' => 'App\Notifications\TestNotification',
             'data' => ['title' => 'テスト通知', 'message' => '本文テスト', 'url' => '/dashboard'],
             'read_at' => null,
@@ -39,7 +39,7 @@ class NotificationControllerTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'notifications' => [
-                    '*' => ['id', 'title', 'message', 'url', 'read_at', 'is_unread', 'created_at_human']
+                    '*' => ['id', 'title', 'message', 'url', 'read_at', 'is_unread', 'created_at_human'],
                 ],
                 'unread_count',
             ])
@@ -54,7 +54,7 @@ class NotificationControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $otherNotification = $otherUser->notifications()->create([
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
             'type' => 'App\Notifications\TestNotification',
             'data' => ['title' => '他人宛て通知'],
             'read_at' => null,
@@ -70,7 +70,7 @@ class NotificationControllerTest extends TestCase
         Sanctum::actingAs($user);
 
         $notification = $user->notifications()->create([
-            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'id' => Str::uuid()->toString(),
             'type' => 'App\Notifications\TestNotification',
             'data' => ['title' => '自分宛て通知'],
             'read_at' => null,
@@ -92,7 +92,7 @@ class NotificationControllerTest extends TestCase
         // 未読通知を2件作成
         for ($i = 0; $i < 2; $i++) {
             $user->notifications()->create([
-                'id' => \Illuminate\Support\Str::uuid()->toString(),
+                'id' => Str::uuid()->toString(),
                 'type' => 'App\Notifications\TestNotification',
                 'data' => ['title' => "通知 {$i}"],
                 'read_at' => null,
@@ -107,7 +107,7 @@ class NotificationControllerTest extends TestCase
         $this->assertEquals(0, $user->unreadNotifications()->count());
     }
 
-    public function test_管理者ユーザーが通知APIにアクセスすると403エラーになる(): void
+    public function test_管理者ユーザーが通知_ap_iにアクセスすると403エラーになる(): void
     {
         // 管理者ユーザーを作成
         $admin = User::factory()->create([
