@@ -19,7 +19,7 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
-        //管理者（Admin）の API 直叩きを 403 で拒否
+        // 管理者（Admin）の API 直叩きを 403 で拒否
         if ($user->role === UserRole::Admin) {
             abort(403, '管理者は通知機能の対象外です。');
         }
@@ -37,12 +37,12 @@ class NotificationController extends Controller
 
         $data = $notifications->map(function (DatabaseNotification $notification) {
             $notificationData = is_array($notification->data) ? $notification->data : [];
-            
+
             $url = $notificationData['url'] ?? null;
-            if (!$url && ($notificationData['notification_type'] ?? '') === 'admin_announcement') {
+            if (! $url && ($notificationData['notification_type'] ?? '') === 'admin_announcement') {
                 $url = route('notifications.show', $notification);
             }
-            if (!$url) {
+            if (! $url) {
                 $url = route('notifications.index');
             }
 
@@ -70,7 +70,7 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
-        //管理者（Admin）の API 直叩きを 403 で拒否
+        // 管理者（Admin）の API 直叩きを 403 で拒否
         if ($user->role === UserRole::Admin) {
             abort(403, '管理者は通知機能の対象外です。');
         }
@@ -97,7 +97,7 @@ class NotificationController extends Controller
     {
         $user = $request->user();
 
-        //管理者（Admin）の API 直叩きを 403 で拒否
+        // 管理者（Admin）の API 直叩きを 403 で拒否
         if ($user->role === UserRole::Admin) {
             abort(403, '管理者は通知機能の対象外です。');
         }
