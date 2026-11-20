@@ -25,7 +25,10 @@ final class IndexAction
         ?bool $isPublished = null,
         int $perPage = 20,
     ): LengthAwarePaginator {
-        $query = MockExam::query();
+        //修正箇所: Eager Loading (with) と問題数の一括集計 (withCount) を追加
+        $query = MockExam::query()
+            ->with(['certification', 'createdBy', 'updatedBy'])
+            ->withCount('mockExamQuestions');
 
         if ($auth->role === UserRole::Coach) {
             $query->whereHas(
