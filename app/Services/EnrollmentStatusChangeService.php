@@ -8,38 +8,41 @@ use App\Enums\EnrollmentStatus;
 use App\Models\Enrollment;
 use App\Models\EnrollmentStatusLog;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
-/**
- * Enrollment 状態遷移の監査ログ(`EnrollmentStatusLog`)を INSERT する Service。
- *
- * 呼出側 Action がトランザクション内で recordStatusChange() を呼ぶ前提。本 Service 自体は
- * DB::transaction() を持たない(`backend-services.md` の規約準拠、ステートレス INSERT only)。
- *
- * `final` 不採用: Mockery で recordStatusChange を mock してトランザクション原子性の rollback 検証を
- * Action テストで行う可能性があるため(`UserStatusChangeService` と同じ判断軸)。
- */
-final class EnrollmentStatusChangeService
+class EnrollmentStatusChangeService
 {
     /**
-     * @param Enrollment $enrollment 状態遷移する対象 Enrollment
-     * @param ?EnrollmentStatus $fromStatus 遷移前ステータス(初回登録時のみ null、それ以降は必須)
-     * @param EnrollmentStatus $toStatus 遷移後ステータス
-     * @param ?User $changedBy 操作者(null はシステム自動 = Schedule Command 等)
-     * @param ?string $reason 変更理由(任意、UI 表示用)
+     * 受講ステータスの遷移ログを記録し、管理者ダッシュボードのキャッシュを破棄する。
      */
     public function recordStatusChange(
         Enrollment $enrollment,
         ?EnrollmentStatus $fromStatus,
         EnrollmentStatus $toStatus,
-        ?User $changedBy,
-        ?string $reason = null,
+        ?User $changedBy = null,
+        ?string $reason = null
     ): EnrollmentStatusLog {
-        return $enrollment->statusLogs()->create([
-            'from_status' => $fromStatus?->value,
-            'to_status' => $toStatus->value,
+        $log = EnrollmentStatusLog::create([
+            'enrollment_id' => $enrollment->id,
+            'from_status' => $fromStatus,
+            'to_status' => $toStatus,
             'changed_by_user_id' => $changedBy?->id,
-            'changed_reason' => $reason,
             'changed_at' => now(),
+            'changed_reason' => $reason,
         ]);
+
+        // ステータス変更時に管理者ダッシュボードのキャッシュをクリア（無効化）
+        $this->invalidateDashboardCache();
+
+        return $log;
+    }
+
+    /**
+     * 管理者ダッシュボードの集計キャッシュを無効化する。
+     */
+    private function invalidateDashboardCache(): void
+    {
+        Cache::forget(config('dashboard.admin_kpi_cache_key', 'dashboard:admin_kpi'));
+        Cache::forget(config('dashboard.admin_completion_rate_cache_key', 'dashboard:admin_completion_rate'));
     }
 }
