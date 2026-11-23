@@ -7,6 +7,7 @@ namespace App\UseCases\Meeting;
 use App\Models\Meeting;
 use App\Models\User;
 use App\Services\MeetingQuotaService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 final class IndexAction
 {
@@ -16,7 +17,8 @@ final class IndexAction
 
     /**
      * @param array<string, mixed>|string|null $filters
-     * @return array{meetings: \Illuminate\Contracts\Pagination\LengthAwarePaginator, filter: string, tab: string, meetingsRemaining: int}
+     *
+     * @return array{meetings: LengthAwarePaginator, filter: string, tab: string, meetingsRemaining: int}
      */
     public function __invoke(User $student, mixed $filters = null): array
     {
@@ -39,7 +41,7 @@ final class IndexAction
         return [
             'meetings' => $meetings,
             'filter' => $filter,
-            'tab' => $filter, 
+            'tab' => $filter,
             'meetingsRemaining' => $this->meetingQuota->remaining($student),
         ];
     }

@@ -22,7 +22,7 @@ final class FetchAvailabilityActionTest extends TestCase
         $student = User::factory()->student()->create();
         $coach = User::factory()->coach()->create();
         $certification = Certification::factory()->published()->create();
-        
+
         $enrollment = Enrollment::factory()->create([
             'user_id' => $student->id,
             'certification_id' => $certification->id,

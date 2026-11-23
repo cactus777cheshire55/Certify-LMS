@@ -6,12 +6,14 @@ namespace App\UseCases\Meeting;
 
 use App\Models\Meeting;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 final class IndexAsCoachAction
 {
     /**
      * @param array{tab?: string, filter?: string, enrollment_id?: string} $filters
-     * @return array{meetings: \Illuminate\Contracts\Pagination\LengthAwarePaginator, filter: string, tab: string, enrollmentFilter: ?string}
+     *
+     * @return array{meetings: LengthAwarePaginator, filter: string, tab: string, enrollmentFilter: ?string}
      */
     public function __invoke(User $coach, array $filters = []): array
     {
@@ -35,7 +37,7 @@ final class IndexAsCoachAction
         return [
             'meetings' => $meetings,
             'filter' => $filter,
-            'tab' => $filter, 
+            'tab' => $filter,
             'enrollmentFilter' => $enrollmentId,
         ];
     }
