@@ -6,16 +6,22 @@ namespace App\Notifications;
 
 use App\Models\QaReply;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class QaReplyReceivedNotification extends Notification
+class QaReplyReceivedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    public int $tries = 3;
+    public array $backoff = [10, 60, 300];
+
     public function __construct(
         public QaReply $reply
-    ) {}
+    ) {
+        $this->afterCommit();
+    }
 
     public function via(object $notifiable): array
     {
@@ -34,7 +40,6 @@ class QaReplyReceivedNotification extends Notification
             ->action('回答を確認する', route('qa-board.show', $thread));
     }
 
-    // ★ ここに記述します
     public function toArray(object $notifiable): array
     {
         $thread = $this->reply->qaThread;
