@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * 管理者ダッシュボードの ViewModel を組み立てる Action。
- * 
+ *
  * 全体 KPI および資格別修了率の集計処理を Cache::remember でキャッシュ化する。
  */
 final class FetchAdminDashboardAction

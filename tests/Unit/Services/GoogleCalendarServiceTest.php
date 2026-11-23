@@ -25,7 +25,7 @@ class GoogleCalendarServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new GoogleCalendarService();
+        $this->service = new GoogleCalendarService;
     }
 
     public function test_get_busy_slots_returns_busy_time_ranges(): void
@@ -146,7 +146,7 @@ class GoogleCalendarServiceTest extends TestCase
         ]);
 
         $baseUrl = base64_decode('aHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vY2FsZW5kYXIvdjMvY2FsZW5kYXJzLw==');
-        $eventsUrl = $baseUrl . urlencode('coach@example.com') . '/events';
+        $eventsUrl = $baseUrl.urlencode('coach@example.com').'/events';
 
         Http::fake([
             $eventsUrl => Http::response([
@@ -170,7 +170,7 @@ class GoogleCalendarServiceTest extends TestCase
         ]);
 
         $baseUrl = base64_decode('aHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vY2FsZW5kYXIvdjMvY2FsZW5kYXJzLw==');
-        $deleteUrl = $baseUrl . urlencode('coach@example.com') . '/events/google_event_12345';
+        $deleteUrl = $baseUrl.urlencode('coach@example.com').'/events/google_event_12345';
 
         Http::fake([
             $deleteUrl => Http::response(null, 204),

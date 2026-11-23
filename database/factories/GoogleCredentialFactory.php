@@ -21,8 +21,8 @@ class GoogleCredentialFactory extends Factory
         return [
             'user_id' => User::factory(),
             'calendar_id' => fake()->safeEmail(),
-            'access_token' => 'fake-access-token-' . Str::random(16),
-            'refresh_token' => 'fake-refresh-token-' . Str::random(16),
+            'access_token' => 'fake-access-token-'.Str::random(16),
+            'refresh_token' => 'fake-refresh-token-'.Str::random(16),
             'expires_at' => now()->addHour(),
         ];
     }

@@ -43,7 +43,7 @@ class ResetPasswordNotification extends BaseResetPassword implements ShouldQueue
             ->greeting('Certify LMS をご利用の皆様へ')
             ->line('パスワード再設定のリクエストを受け付けました。')
             ->action('パスワードを再設定する', $url)
-            ->line('このリンクは ' . config('auth.passwords.users.expire') . ' 分間有効です。')
+            ->line('このリンクは '.config('auth.passwords.users.expire').' 分間有効です。')
             ->line('心当たりがない場合は、このメールを破棄してください。')
             ->salutation('Certify LMS 運営チーム');
     }

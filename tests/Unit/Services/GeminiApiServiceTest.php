@@ -31,7 +31,7 @@ class GeminiApiServiceTest extends TestCase
             'ai-chat.gemini.model' => 'gemini-2.5-flash',
             'ai-chat.gemini.base_url' => 'https://generativelanguage.googleapis.com/v1beta/models',
         ]);
-        $this->service = new GeminiApiService();
+        $this->service = new GeminiApiService;
     }
 
     public function test_ask_sends_prompt_and_saves_successful_response(): void
@@ -72,6 +72,7 @@ class GeminiApiServiceTest extends TestCase
         // プロンプト構造およびヘッダーの検証
         Http::assertSent(function ($request) {
             $data = $request->data();
+
             return isset($data['system_instruction'])
                 && isset($data['contents'])
                 && $request->hasHeader('x-goog-api-key', 'test-api-key');

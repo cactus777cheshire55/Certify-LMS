@@ -15,6 +15,7 @@ class AdminAnnouncementNotification extends Notification implements ShouldQueue
     use Queueable;
 
     public int $tries = 3;
+
     public array $backoff = [10, 60, 300];
 
     public function __construct(
@@ -31,7 +32,7 @@ class AdminAnnouncementNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('【お知らせ】' . $this->announcement->title)
+            ->subject('【お知らせ】'.$this->announcement->title)
             ->line($this->announcement->body)
             ->action('お知らせを確認する', route('notifications.index'));
     }

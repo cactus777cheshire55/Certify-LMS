@@ -74,7 +74,7 @@ final class StoreAction
             return $meeting->fresh();
         });
 
-        // Google カレンダー連携登録（フォールバック付き）
+        // Google カレンダー連携登録(フォールバック付き)
         $googleEventId = $this->googleCalendarService->createMeetingEvent($meeting->coach, $meeting);
         if ($googleEventId !== null) {
             $meeting->update(['google_event_id' => $googleEventId]);

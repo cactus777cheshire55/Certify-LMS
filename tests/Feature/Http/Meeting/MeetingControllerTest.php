@@ -255,11 +255,14 @@ class MeetingControllerTest extends TestCase
         $response->assertForbidden();
     }
 
+    /**
+     * 同一コーチ・同一時刻枠に既存の有効な予約(reserved)がある場合、
+     * 二重予約が DB の UNIQUE(coach_id, reserved_scheduled_at) 制約および
+     * 業務ロジックによって阻止されることを検証。
+     */
     public function test_store_blocks_double_booking_for_same_coach_and_slot(): void
     {
-        // Arrange: 予約可能コンテキスト + 同コーチ・同時刻に canceled 面談を 1 件先在させる。
-        // canceled は候補抽出(予約済コーチ除外)をすり抜けるが、(coach_id, scheduled_at) UNIQUE は
-        // status を問わず効くため、並行を起こさず決定論的に二重予約の衝突を再現できる。
+        // Arrange: 予約可能コンテキスト + 同コーチ・同時刻に reserved 面談を 1 件作成しておく
         $student = User::factory()->student()->inProgress()->create(['max_meetings' => 3]);
         $otherStudent = User::factory()->student()->create();
         $admin = User::factory()->admin()->create();
@@ -268,11 +271,15 @@ class MeetingControllerTest extends TestCase
         ]);
         $certification = Certification::factory()->published()->create();
         $this->attachCoach($certification, $coach, $admin);
-        CoachAvailability::factory()->forCoach($coach)->onDay(1)->timeRange('09:00:00', '18:00:00')->create();
-        $enrollment = Enrollment::factory()->for($student, 'user')->for($certification)->learning()->create();
-        $scheduledAt = now()->startOfDay()->next(Carbon::MONDAY)->setTime(10, 0); // 次の月曜 10:00(未来)
 
-        Meeting::factory()->canceled()->forCoach($coach)->forStudent($otherStudent)->create([
+        CoachAvailability::factory()->forCoach($coach)->onDay(1)->timeRange('09:00:00', '18:00:00')->create();
+
+        $enrollment = Enrollment::factory()->for($student, 'user')->for($certification)->learning()->create();
+
+        $scheduledAt = now()->startOfDay()->next(Carbon::MONDAY)->setTime(10, 0);
+
+        // 【修正箇所】事前に予約済み(reserved)の面談を作成しておく
+        Meeting::factory()->reserved()->forCoach($coach)->forStudent($otherStudent)->create([
             'scheduled_at' => $scheduledAt,
         ]);
 
@@ -284,13 +291,19 @@ class MeetingControllerTest extends TestCase
                 'topic' => '相談したい',
             ]);
 
-        // Assert: 二重予約は成立せず、新規 reserved は作られない(canceled の 1 件のみが残る)
+        // Assert: 二重予約は成立せず、エラーが返ること
         $response->assertRedirect();
         $response->assertSessionHas('error');
+
+        // DB上の reserved レコードは初期の 1 件のみであることを検証
         $this->assertSame(
-            0,
-            Meeting::query()->where('status', MeetingStatus::Reserved->value)->count(),
-            '同コーチ・同時刻の二重予約は (coach_id, scheduled_at) UNIQUE で阻止されるはず',
+            1,
+            Meeting::query()
+                ->where('coach_id', $coach->id)
+                ->where('scheduled_at', $scheduledAt)
+                ->where('status', MeetingStatus::Reserved->value)
+                ->count(),
+            '同コーチ・同時刻の予約済み枠への二重予約は阻止されるはず'
         );
     }
 
@@ -315,5 +328,68 @@ class MeetingControllerTest extends TestCase
             'type' => MeetingQuotaTransactionType::Refunded->value,
             'amount' => 1,
         ]);
+    }
+
+    /**
+     * キャンセル済み(canceled)のレコードが存在する時刻枠に対しても、
+     * 履歴を残したまま新しい予約(reserved)が INSERT されて成功することを検証。
+     */
+    public function test_store_allows_rebooking_canceled_slot(): void
+    {
+        // Arrange: 予約可能コンテキスト + 同コーチ・同時刻に canceled 面談を 1 件作成しておく
+        $student = User::factory()->student()->inProgress()->create(['max_meetings' => 3]);
+        $otherStudent = User::factory()->student()->create();
+        $admin = User::factory()->admin()->create();
+        $coach = User::factory()->coach()->inProgress()->create([
+            'meeting_url' => 'https://meet.example.com/coach-room',
+        ]);
+        $certification = Certification::factory()->published()->create();
+        $this->attachCoach($certification, $coach, $admin);
+
+        CoachAvailability::factory()->forCoach($coach)->onDay(1)->timeRange('09:00:00', '18:00:00')->create();
+
+        $enrollment = Enrollment::factory()->for($student, 'user')->for($certification)->learning()->create();
+
+        $scheduledAt = now()->startOfDay()->next(Carbon::MONDAY)->setTime(10, 0);
+
+        // キャンセル済み(canceled)の面談レコードを作成
+        $canceledMeeting = Meeting::factory()->canceled()->forCoach($coach)->forStudent($otherStudent)->create([
+            'scheduled_at' => $scheduledAt,
+        ]);
+
+        // Act: 受講生が同じ時刻枠で予約を実行
+        $response = $this->actingAs($student)
+            ->from(route('meetings.create', $enrollment))
+            ->post(route('meetings.store', $enrollment), [
+                'scheduled_at' => $scheduledAt->format('Y-m-d\TH:i:s'),
+                'topic' => '再予約の相談',
+            ]);
+
+        // Assert: 正常にリダイレクトし、過去の canceled は残ったまま新たな reserved が作成されること
+        $response->assertRedirect();
+
+        // 1. 過去の canceled レコードが上書き・削除されず残っていること
+        $this->assertDatabaseHas('meetings', [
+            'id' => $canceledMeeting->id,
+            'status' => MeetingStatus::Canceled->value,
+        ]);
+
+        // 2. 新しい reserved レコードが INSERT されていること
+        $this->assertDatabaseHas('meetings', [
+            'student_id' => $student->id,
+            'coach_id' => $coach->id,
+            'scheduled_at' => $scheduledAt,
+            'status' => MeetingStatus::Reserved->value,
+            'topic' => '再予約の相談',
+        ]);
+
+        // 3. 当該時刻枠のレコードが合計 2 件（canceled 1件 + reserved 1件）存在すること
+        $this->assertSame(
+            2,
+            Meeting::query()
+                ->where('coach_id', $coach->id)
+                ->where('scheduled_at', $scheduledAt)
+                ->count()
+        );
     }
 }

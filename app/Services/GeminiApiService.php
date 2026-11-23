@@ -69,7 +69,7 @@ class GeminiApiService
                     'role' => AiChatMessageRole::Assistant,
                     'content' => '',
                     'status' => AiChatMessageStatus::Error,
-                    'error_detail' => 'Gemini API Error: ' . $response->body(),
+                    'error_detail' => 'Gemini API Error: '.$response->body(),
                     'model_name' => $model,
                     'response_time_ms' => $responseTimeMs,
                 ]);

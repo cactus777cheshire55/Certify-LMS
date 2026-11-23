@@ -44,7 +44,7 @@ class StripeWebhookTest extends TestCase
         ]);
 
         // Stripe Event モックの作成
-        $mockEvent = new Event();
+        $mockEvent = new Event;
         $mockEvent->type = 'checkout.session.completed';
         $mockEvent->data = (object) [
             'object' => (object) [
@@ -132,4 +132,4 @@ class StripeWebhookTest extends TestCase
 
         $response->assertStatus(400);
     }
-}  
+}

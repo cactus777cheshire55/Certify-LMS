@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Notifications;
 
 use App\Enums\AnnouncementTargetType;
-use App\Models\Announcement;
 use App\Models\Certification;
 use App\Models\Enrollment;
 use App\Models\Meeting;
@@ -18,7 +17,7 @@ use App\Notifications\QaReplyReceivedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Notification;
-use Tests\TestCase; 
+use Tests\TestCase;
 
 class QueueNotificationTest extends TestCase
 {

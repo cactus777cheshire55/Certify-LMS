@@ -15,6 +15,7 @@ class MeetingReminderNotification extends Notification implements ShouldQueue
     use Queueable;
 
     public int $tries = 3;
+
     public array $backoff = [10, 60, 300];
 
     public function __construct(
@@ -38,7 +39,7 @@ class MeetingReminderNotification extends Notification implements ShouldQueue
             ->subject("【リマインダー】{$timingLabel}に面談が予定されています")
             ->greeting("{$notifiable->name} 様")
             ->line("{$timingLabel}（{$timeStr}）に面談が予定されています。")
-            ->line('相談内容: ' . $this->meeting->topic)
+            ->line('相談内容: '.$this->meeting->topic)
             ->action('面談詳細を確認する', route('meetings.show', $this->meeting));
     }
 
@@ -48,7 +49,7 @@ class MeetingReminderNotification extends Notification implements ShouldQueue
 
         return [
             'title' => "【リマインダー】{$timingLabel}の面談通知",
-            'body' => "{$timingLabel}（" . $this->meeting->scheduled_at->format('H:i') . '〜）に面談が予定されています。',
+            'body' => "{$timingLabel}（".$this->meeting->scheduled_at->format('H:i').'〜）に面談が予定されています。',
             'notification_type' => 'meeting_reminder',
             'meeting_id' => $this->meeting->id,
         ];

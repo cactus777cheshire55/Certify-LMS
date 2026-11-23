@@ -4,164 +4,100 @@ declare(strict_types=1);
 
 namespace Tests\Feature\UseCases\Dashboard;
 
-use App\Enums\EnrollmentStatus;
 use App\Models\Certification;
 use App\Models\Enrollment;
 use App\Models\User;
-use App\Services\EnrollmentStatusChangeService;
+use App\Services\EnrollmentStatsService;
 use App\UseCases\Dashboard\FetchAdminDashboardAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
+use Mockery;
 use Tests\TestCase;
 
-/**
- * 管理者ダッシュボード集計のキャッシュ挙動を検証する Feature テスト。
- */
-class AdminDashboardCacheTest extends TestCase
+class FetchAdminDashboardActionTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_kpi_is_served_from_cache_on_second_fetch(): void
+    public function test_returns_kpi_aggregated_from_enrollments(): void
     {
-        // Arrange: admin + 受講中 2 件、キャッシュは空の状態から始める
         $admin = User::factory()->admin()->inProgress()->create();
-        $cert = Certification::factory()->published()->create();
-        Enrollment::factory()->for($cert)->learning()->count(2)->create();
-
-        Cache::flush();
-
-        // Act: 1 回目で集計してキャッシュ → 無効化経路を通さず DB を直接増やす → クエリ計測しつつ 2 回目
-        $first = app(FetchAdminDashboardAction::class)($admin);
-
+        $cert = Certification::factory()->published()->create(['name' => '基本情報技術者']);
         Enrollment::factory()->for($cert)->learning()->count(3)->create();
+        Enrollment::factory()->for($cert)->passed()->count(2)->create();
+        Enrollment::factory()->for($cert)->failed()->count(1)->create();
 
-        $queryCount = 0;
-        DB::listen(function () use (&$queryCount): void {
-            $queryCount++;
-        });
+        $vm = app(FetchAdminDashboardAction::class)($admin);
 
-        $second = app(FetchAdminDashboardAction::class)($admin);
-
-        // Assert: 2 回目はキャッシュヒットで重い集計クエリが 1 本も走らず、値も 1 回目のまま(直接 INSERT は反映されない)
-        $this->assertSame(
-            2,
-            $second->kpi['learning_count'],
-            'TTL 内で無効化イベントが無ければ集計はキャッシュから返るはず(直接 INSERT は反映されない)'
-        );
-        $this->assertSame(
-            0,
-            $queryCount,
-            'キャッシュヒット時は重い集計クエリが 1 本も発行されないはず'
-        );
-        $this->assertTrue(
-            Cache::has(config('dashboard.admin_kpi_cache_key')),
-            '管理者 KPI 集計がキャッシュキーに保存されているはず'
-        );
+        $this->assertSame(3, $vm->kpi['learning_count']);
+        $this->assertSame(2, $vm->kpi['passed_count']);
+        $this->assertSame(1, $vm->kpi['failed_count']);
+        $this->assertFalse($vm->isEmptyState);
     }
 
-    public function test_completion_rate_is_served_from_cache_on_second_fetch(): void
+    public function test_kpi_array_does_not_carry_pending_count_key(): void
     {
-        // Arrange: admin + 受講中 2 件(修了率 0 %)、キャッシュは空の状態から始める
         $admin = User::factory()->admin()->inProgress()->create();
         $cert = Certification::factory()->published()->create();
-        Enrollment::factory()->for($cert)->learning()->count(2)->create();
+        Enrollment::factory()->for($cert)->learning()->create();
 
-        Cache::flush();
+        $vm = app(FetchAdminDashboardAction::class)($admin);
 
-        // Act: 1 回目で集計してキャッシュ → 無効化経路を通さず合格者を直接増やす → クエリ計測しつつ 2 回目
-        $first = app(FetchAdminDashboardAction::class)($admin);
-
-        Enrollment::factory()->for($cert)->passed()->create();
-
-        $queryCount = 0;
-        DB::listen(function () use (&$queryCount): void {
-            $queryCount++;
-        });
-
-        $second = app(FetchAdminDashboardAction::class)($admin);
-
-        $secondRate = $second->completionRateByCertification->firstWhere('certification_id', $cert->id)['completion_rate'] ?? null;
-
-        // Assert: 2 回目はキャッシュヒットで集計クエリが走らず、修了率も 1 回目のまま
-        $this->assertSame(
-            0.0,
-            $secondRate,
-            'TTL 内で無効化イベントが無ければ修了率はキャッシュから返るはず(直接 INSERT は反映されない)'
-        );
-        $this->assertSame(
-            0,
-            $queryCount,
-            'キャッシュヒット時は重い集計クエリが 1 本も発行されないはず'
-        );
-        $this->assertTrue(
-            Cache::has(config('dashboard.admin_completion_rate_cache_key')),
-            '資格別修了率の集計がキャッシュキーに保存されているはず'
-        );
+        $this->assertArrayNotHasKey('pending_count', $vm->kpi);
     }
 
-    public function test_admin_kpi_cache_is_invalidated_on_enrollment_status_change(): void
+    public function test_by_certification_breakdown_is_top_10(): void
     {
-        // Arrange: admin + 受講中 2 件を 1 度集計してキャッシュさせる
         $admin = User::factory()->admin()->inProgress()->create();
-        $cert = Certification::factory()->published()->create();
-        $enrollments = Enrollment::factory()->for($cert)->learning()->count(2)->create();
+        $certifications = Certification::factory()->published()->count(12)->create();
+        foreach ($certifications as $index => $cert) {
+            Enrollment::factory()->for($cert)->learning()->count($index + 1)->create();
+        }
 
-        Cache::flush();
-        app(FetchAdminDashboardAction::class)($admin);
+        $vm = app(FetchAdminDashboardAction::class)($admin);
 
-        // Act: 1 件を合格に遷移(状態遷移チョークポイント経由でキャッシュが無効化される)
-        $target = $enrollments->first();
-        $target->update(['status' => EnrollmentStatus::Passed]);
-
-        app(EnrollmentStatusChangeService::class)->recordStatusChange(
-            $target,
-            EnrollmentStatus::Learning,
-            EnrollmentStatus::Passed,
-            $admin
-        );
-
-        $after = app(FetchAdminDashboardAction::class)($admin);
-
-        // Assert: KPI キャッシュが無効化され、最新の集計(learning 1 / passed 1)が返る
-        $this->assertSame(
-            1,
-            $after->kpi['learning_count'],
-            '状態遷移後は KPI キャッシュが無効化され、最新の受講中件数が返るはず'
-        );
-        $this->assertSame(1, $after->kpi['passed_count']);
+        $this->assertCount(10, $vm->byCertificationTop10);
+        // 上位は受講中件数の多い順
+        $this->assertSame(12, $vm->byCertificationTop10->first()['learning']);
     }
 
-    public function test_completion_rate_cache_is_invalidated_on_enrollment_status_change(): void
+    public function test_completion_rate_excludes_zero_total_certifications(): void
     {
-        // Arrange: admin + 受講中 2 件(修了率 0 %)を 1 度集計してキャッシュさせる
         $admin = User::factory()->admin()->inProgress()->create();
-        $cert = Certification::factory()->published()->create();
-        $enrollments = Enrollment::factory()->for($cert)->learning()->count(2)->create();
+        $certWithEnrollments = Certification::factory()->published()->create(['name' => 'A']);
+        Certification::factory()->published()->create(['name' => 'B']);
+        Enrollment::factory()->for($certWithEnrollments)->passed()->count(3)->create();
+        Enrollment::factory()->for($certWithEnrollments)->learning()->create();
 
-        Cache::flush();
-        app(FetchAdminDashboardAction::class)($admin);
+        $vm = app(FetchAdminDashboardAction::class)($admin);
 
-        // Act: 1 件を合格に遷移(状態遷移チョークポイント経由でキャッシュが無効化される)
-        $target = $enrollments->first();
-        $target->update(['status' => EnrollmentStatus::Passed]);
+        $this->assertCount(1, $vm->completionRateByCertification);
+        $row = $vm->completionRateByCertification->first();
+        $this->assertSame('A', $row['certification_name']);
+        $this->assertSame(0.75, $row['completion_rate']);
+    }
 
-        app(EnrollmentStatusChangeService::class)->recordStatusChange(
-            $target,
-            EnrollmentStatus::Learning,
-            EnrollmentStatus::Passed,
-            $admin
-        );
+    public function test_empty_state_is_true_when_no_enrollments(): void
+    {
+        $admin = User::factory()->admin()->inProgress()->create();
 
-        $after = app(FetchAdminDashboardAction::class)($admin);
+        $vm = app(FetchAdminDashboardAction::class)($admin);
 
-        $afterRate = $after->completionRateByCertification->firstWhere('certification_id', $cert->id)['completion_rate'] ?? null;
+        $this->assertTrue($vm->isEmptyState);
+    }
 
-        // Assert: 修了率キャッシュも無効化され、最新の修了率(合格 1 / 全 2 = 0.5)が返る
-        $this->assertSame(
-            0.5,
-            $afterRate,
-            '状態遷移後は修了率キャッシュも無効化され、最新の修了率(1/2)が返るはず'
-        );
+    public function test_kpi_null_when_service_throws_and_does_not_have_notifications_property(): void
+    {
+        $admin = User::factory()->admin()->inProgress()->create();
+
+        $mock = Mockery::mock(EnrollmentStatsService::class);
+        $mock->shouldReceive('adminKpi')->andThrow(new \RuntimeException('failure'));
+        $mock->shouldReceive('completionRateByCertification')->andReturn(collect());
+        $this->app->instance(EnrollmentStatsService::class, $mock);
+
+        $vm = app(FetchAdminDashboardAction::class)($admin);
+
+        $this->assertNull($vm->kpi);
+        $this->assertTrue($vm->isEmptyState);
+        $this->assertFalse(property_exists($vm, 'recentNotifications'));
+        $this->assertFalse(property_exists($vm, 'unreadNotificationCount'));
     }
 }

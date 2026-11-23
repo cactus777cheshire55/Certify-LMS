@@ -56,7 +56,7 @@ class ChatMessageReceivedNotification extends Notification implements ShouldQueu
         return [
             'notification_type' => 'chat_message_received',
             'title' => '新着チャットメッセージ',
-            'message' => "{$this->chatMessage->sender->name}: " . Str::limit($this->chatMessage->body, 50),
+            'message' => "{$this->chatMessage->sender->name}: ".Str::limit($this->chatMessage->body, 50),
             'url' => route('chat.show', $room),
             'chat_room_id' => $room->id,
             'chat_message_id' => $this->chatMessage->id,

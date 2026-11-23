@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Enums\ContentStatus;
 use App\Enums\EnrollmentStatus;
 use App\Enums\UserRole;
 use App\Http\Requests\Enrollment\StoreRequest;
 use App\Http\Requests\Enrollment\UpdateExamDateRequest;
 use App\Models\Certification;
-use App\Models\Chapter;
 use App\Models\Enrollment;
-use App\Models\Part;
-use App\Services\Learning\ProgressSummary;
 use App\Services\LearningProgressService;
 use App\UseCases\Enrollment\DestroyAction;
 use App\UseCases\Enrollment\IndexAction;
@@ -23,7 +19,6 @@ use App\UseCases\Enrollment\StoreAction;
 use App\UseCases\Enrollment\UpdateExamDateAction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**

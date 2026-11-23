@@ -20,13 +20,13 @@ class QueueNotificationUnitTest extends TestCase
 {
     public function test_notification_classes_implement_should_queue_interface(): void
     {
-        $notificationClasses = array(
+        $notificationClasses = [
             ResetPasswordNotification::class,
             MeetingReminderNotification::class,
             QaReplyReceivedNotification::class,
             AdminAnnouncementNotification::class,
             ChatMessageReceivedNotification::class,
-        );
+        ];
 
         foreach ($notificationClasses as $className) {
             $this->assertTrue(
@@ -38,13 +38,13 @@ class QueueNotificationUnitTest extends TestCase
 
     public function test_notification_classes_have_correct_queue_configuration(): void
     {
-        $notifications = array(
+        $notifications = [
             new ResetPasswordNotification('dummy-token'),
-            new MeetingReminderNotification(new Meeting(), 'eve'),
-            new QaReplyReceivedNotification(new QaReply()),
-            new AdminAnnouncementNotification(new Announcement()),
-            new ChatMessageReceivedNotification(new ChatMessage()),
-        );
+            new MeetingReminderNotification(new Meeting, 'eve'),
+            new QaReplyReceivedNotification(new QaReply),
+            new AdminAnnouncementNotification(new Announcement),
+            new ChatMessageReceivedNotification(new ChatMessage),
+        ];
 
         foreach ($notifications as $notification) {
             $className = get_class($notification);
@@ -59,7 +59,7 @@ class QueueNotificationUnitTest extends TestCase
                 "{$className} の \$tries が 3 に設定されていません。"
             );
             $this->assertSame(
-                array(10, 60, 300),
+                [10, 60, 300],
                 $notification->backoff ?? null,
                 "{$className} の \$backoff が正しく設定されていません。"
             );

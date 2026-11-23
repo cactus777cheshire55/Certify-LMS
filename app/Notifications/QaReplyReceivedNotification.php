@@ -15,6 +15,7 @@ class QaReplyReceivedNotification extends Notification implements ShouldQueue
     use Queueable;
 
     public int $tries = 3;
+
     public array $backoff = [10, 60, 300];
 
     public function __construct(
