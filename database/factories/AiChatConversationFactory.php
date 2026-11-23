@@ -15,9 +15,6 @@ class AiChatConversationFactory extends Factory
 {
     protected $model = AiChatConversation::class;
 
-    /**
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
@@ -28,5 +25,12 @@ class AiChatConversationFactory extends Factory
             'last_message_at' => now(),
             'auto_title_enabled' => true,
         ];
+    }
+
+    public function forUser(User $user): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_id' => $user->id,
+        ]);
     }
 }

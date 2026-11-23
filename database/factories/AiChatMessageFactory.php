@@ -17,9 +17,6 @@ class AiChatMessageFactory extends Factory
 {
     protected $model = AiChatMessage::class;
 
-    /**
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
@@ -28,5 +25,26 @@ class AiChatMessageFactory extends Factory
             'content' => $this->faker->sentence(),
             'status' => AiChatMessageStatus::Completed,
         ];
+    }
+
+    public function forConversation(AiChatConversation $conversation): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'ai_chat_conversation_id' => $conversation->id,
+        ]);
+    }
+
+    public function user(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => AiChatMessageRole::User,
+        ]);
+    }
+
+    public function assistant(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => AiChatMessageRole::Assistant,
+        ]);
     }
 }
