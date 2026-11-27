@@ -111,7 +111,7 @@ final class GoogleCalendarController extends Controller
             $token = $credential->refresh_token ?? $credential->access_token;
             if (! empty($token)) {
                 try {
-                    Http::asForm()->post("https://oauth2." . "google" . "apis.com/revoke", ["token" => $token]);
+                    Http::asForm()->post('https://oauth2.'.'google'.'apis.com/revoke', ['token' => $token]);
                     Http::asForm()->post($revokeUrl, ['token' => $token]);
                 } catch (\Throwable) {
                 }

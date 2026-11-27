@@ -8,7 +8,9 @@ use App\Models\Certification;
 use App\Models\CoachAvailability;
 use App\Models\Enrollment;
 use App\Models\GoogleCredential;
+use App\Models\Meeting;
 use App\Models\User;
+use App\Services\MeetingAvailabilityService;
 use App\UseCases\Meeting\StoreAction;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -66,7 +68,7 @@ class StoreActionGoogleBusyTest extends TestCase
         $this->attachCoach($certification, $coachFree, $admin);
         CoachAvailability::factory()->forCoach($coachFree)->onDay(1)->timeRange('09:00:00', '18:00:00')->create();
         $otherStudent = User::factory()->student()->create();
-        \App\Models\Meeting::factory()->completed()->forCoach($coachFree)->forStudent($otherStudent)->create();
+        Meeting::factory()->completed()->forCoach($coachFree)->forStudent($otherStudent)->create();
 
         $student = User::factory()->student()->inProgress()->create(['max_meetings' => 3]);
         $enrollment = Enrollment::factory()->for($student, 'user')->for($certification)->learning()->create();
@@ -92,7 +94,7 @@ class StoreActionGoogleBusyTest extends TestCase
         ]);
 
         // 前提確認: 空き枠表示では coachBusy が正しく除外され、coachFree のみ 1 名が空きとして数えられている
-        $slots = app(\App\Services\MeetingAvailabilityService::class)
+        $slots = app(MeetingAvailabilityService::class)
             ->slotsForCertification($certification, $scheduledAt->copy()->startOfDay());
         $matchedSlot = $slots->first(fn (array $slot) => $slot['slot_start']->equalTo($scheduledAt));
         $this->assertNotNull($matchedSlot, '前提条件: 対象スロットが空き枠一覧に存在するはず');

@@ -4,6 +4,10 @@
 
 > プロジェクト構造・ドメインモデル・コードの読み進め方は [ONBOARDING.md](./ONBOARDING.md) を参照してください。
 
+## 作成者
+
+ 高橋秀和
+
 ## 主な機能
 
 | ロール | 機能 |
@@ -30,8 +34,8 @@
 ### 1. リポジトリの clone
 
 ```bash
-git clone <このリポジトリの URL>
-cd <リポジトリ名>
+git clone https://github.com/cactus777cheshire55/Certify-LMS
+cd Certify-LMS
 ```
 
 ### 2. 環境変数ファイルの作成
