@@ -89,12 +89,14 @@ final class StoreAction
     private function findAvailableCoaches(Certification $certification, Carbon $scheduledAt): Collection
     {
         $time = $scheduledAt->format('H:i:s');
+        $endAt = $scheduledAt->copy()->addHour();
 
-        return $certification->coaches()
-            ->whereHas('coachAvailabilities', function ($q) use ($scheduledAt, $time) {
+        $coaches = $certification->coaches()
+            ->with('googleCredential')
+            ->whereHas('coachAvailabilities', function ($q) use ($scheduledAt, $time, $endAt) {
                 $q->where('day_of_week', $scheduledAt->dayOfWeek)
                     ->where('start_time', '<=', $time)
-                    ->where('end_time', '>=', $scheduledAt->copy()->addHour()->format('H:i:s'))
+                    ->where('end_time', '>=', $endAt->format('H:i:s'))
                     ->where('is_active', true);
             })
             ->whereDoesntHave('meetingsAsCoach', function ($q) use ($scheduledAt) {
@@ -102,5 +104,10 @@ final class StoreAction
                     ->whereIn('status', [MeetingStatus::Reserved->value, MeetingStatus::Completed->value]);
             })
             ->get();
+
+        // Google Calendar 側で Busy なコーチを除外する
+        return $coaches->filter(function (User $coach) use ($scheduledAt, $endAt) {
+            return empty($this->googleCalendarService->getBusySlots($coach, $scheduledAt, $endAt));
+        })->values();
     }
 }

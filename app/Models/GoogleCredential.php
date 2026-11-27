@@ -21,6 +21,11 @@ final class GoogleCredential extends Model
         'connected_at',
     ];
 
+    protected $hidden = [
+        'access_token',
+        'refresh_token',
+    ];
+
     protected $casts = [
         'expires_at' => 'datetime',
         'connected_at' => 'datetime',

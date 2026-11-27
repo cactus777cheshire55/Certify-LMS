@@ -68,6 +68,19 @@ services:
             - sail
         depends_on:
             - mysql
+    queue:
+        image: 'sail-8.5/app'
+        command: php artisan queue:work --tries=3
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - laravel.test
+            - mysql
 networks:
     sail:
         driver: bridge

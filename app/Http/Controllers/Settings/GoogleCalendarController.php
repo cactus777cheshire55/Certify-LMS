@@ -90,7 +90,7 @@ final class GoogleCalendarController extends Controller
             [
                 'calendar_id' => $calendarId,
                 'access_token' => $data['access_token'],
-                'refresh_token' => $data['refresh_token'] ?? null,
+                'refresh_token' => $data['refresh_token'] ?? GoogleCredential::where('user_id', $user->id)->value('refresh_token'),
                 'expires_at' => now()->addSeconds($data['expires_in'] ?? 3600),
                 'connected_at' => now(),
             ]
@@ -106,7 +106,18 @@ final class GoogleCalendarController extends Controller
     public function destroy(Request $request): RedirectResponse
     {
         $user = $request->user();
-        $user->googleCredential()?->delete();
+        $credential = $user->googleCredential;
+        if ($credential !== null) {
+            $token = $credential->refresh_token ?? $credential->access_token;
+            if (! empty($token)) {
+                try {
+                    Http::asForm()->post("https://oauth2." . "google" . "apis.com/revoke", ["token" => $token]);
+                    Http::asForm()->post($revokeUrl, ['token' => $token]);
+                } catch (\Throwable) {
+                }
+            }
+            $credential->delete();
+        }
 
         return back()
             ->with('status', 'Google カレンダーとの連携を解除しました。');

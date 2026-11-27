@@ -2,11 +2,8 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Admin\AnnouncementController;
-use App\Http\Controllers\Admin\MeetingPackController;
-use App\Http\Controllers\Admin\PlanController;
-use App\Http\Controllers\Admin\QaThreadController as AdminQaThreadController;
 use App\Http\Controllers\AiChatController;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\Auth\OnboardingController;
 use App\Http\Controllers\BrowseController;
 use App\Http\Controllers\CertificateDownloadController;
@@ -25,6 +22,7 @@ use App\Http\Controllers\EnrollmentNoteController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LearningHourTargetController;
 use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\MeetingPackController;
 use App\Http\Controllers\MeetingQuotaCheckoutController;
 use App\Http\Controllers\MeetingQuotaHistoryController;
 use App\Http\Controllers\MockExamAnswerController;
@@ -35,8 +33,10 @@ use App\Http\Controllers\MockExamSessionController;
 use App\Http\Controllers\MockExamSessionMonitorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PartController;
+use App\Http\Controllers\PlanController;
 use App\Http\Controllers\QaReplyController;
 use App\Http\Controllers\QaThreadController;
+use App\Http\Controllers\QaThreadModerationController;
 use App\Http\Controllers\QuestionCategoryController;
 use App\Http\Controllers\QuizHistoryController;
 use App\Http\Controllers\QuizStatsController;
@@ -544,10 +544,10 @@ Route::middleware(['auth', 'role:admin'])
     ->prefix('admin/qa-board')
     ->name('admin.qa-board.')
     ->group(function () {
-        Route::get('/', [AdminQaThreadController::class, 'index'])->name('index');
-        Route::get('/{thread}', [AdminQaThreadController::class, 'show'])->name('show');
-        Route::delete('/{thread}', [AdminQaThreadController::class, 'destroy'])->name('destroy');
-        Route::delete('/{thread}/replies/{reply}', [AdminQaThreadController::class, 'destroyReply'])->name('replies.destroy');
+        Route::get('/', [QaThreadModerationController::class, 'index'])->name('index');
+        Route::get('/{thread}', [QaThreadModerationController::class, 'show'])->name('show');
+        Route::delete('/{thread}', [QaThreadModerationController::class, 'destroy'])->name('destroy');
+        Route::delete('/{thread}/replies/{reply}', [QaThreadModerationController::class, 'destroyReply'])->name('replies.destroy');
     });
 
 // ============================================================

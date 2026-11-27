@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
 use App\Enums\MeetingPackStatus;
-use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreMeetingPackRequest;
 use App\Http\Requests\UpdateMeetingPackRequest;
 use App\Models\MeetingPack;

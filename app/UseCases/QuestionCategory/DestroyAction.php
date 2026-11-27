@@ -10,22 +10,17 @@ use App\Models\SectionQuestion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * 出題分野マスタの SoftDelete ユースケース。
- *
- * 共有マスタの削除ガードとして、演習問題(`\App\Models\SectionQuestion`) または模試問題
- * (`mock_exam_questions` テーブル) に 1 件でも参照が残っていれば QuestionCategoryInUseException(409)
- * を throw して削除を拒否する。模試問題テーブルが未マイグレーション環境では参照件数を 0 とみなす。
- */
 final class DestroyAction
 {
     /**
+     * 出題分野マスタの物理削除処理
+     * 演習問題(SectionQuestion) または 模試問題(mock_exam_questions) が 1 件でも参照されていれば拒否
+     *
      * @throws QuestionCategoryInUseException
      */
     public function __invoke(QuestionCategory $category): void
     {
-        $sectionQuestionCount = SectionQuestion::where('category_id', $category->id)
-            ->count();
+        $sectionQuestionCount = SectionQuestion::where('category_id', $category->id)->count();
 
         $mockExamQuestionCount = Schema::hasTable('mock_exam_questions')
             ? DB::table('mock_exam_questions')

@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
 use App\Enums\PlanStatus;
-use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePlanRequest;
 use App\Http\Requests\UpdatePlanRequest;
 use App\Models\Plan;

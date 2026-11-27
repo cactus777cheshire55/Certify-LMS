@@ -7,12 +7,11 @@ namespace App\UseCases\Dashboard;
 use App\Models\User;
 use App\Services\EnrollmentStatsService;
 use App\UseCases\Dashboard\ViewModels\AdminDashboardViewModel;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * 管理者ダッシュボードの ViewModel を組み立てる Action。
  *
- * 全体 KPI および資格別修了率の集計処理を Cache::remember でキャッシュ化する。
+ * 全体 KPI および資格別修了率の集計結果は EnrollmentStatsService 側でキャッシュ化されている。
  */
 final class FetchAdminDashboardAction
 {
@@ -24,21 +23,9 @@ final class FetchAdminDashboardAction
 
     public function __invoke(User $admin): AdminDashboardViewModel
     {
-        $cacheTtl = config('dashboard.cache_ttl', 3600);
+        $kpi = $this->safe(fn () => $this->stats->adminKpi());
 
-        // 全体 KPI のキャッシュ取得・生成
-        $kpi = $this->safe(fn () => Cache::remember(
-            config('dashboard.admin_kpi_cache_key', 'dashboard:admin_kpi'),
-            $cacheTtl,
-            fn () => $this->stats->adminKpi()
-        ));
-
-        // 資格別修了率のキャッシュ取得・生成
-        $completionRateByCertification = $this->safe(fn () => Cache::remember(
-            config('dashboard.admin_completion_rate_cache_key', 'dashboard:admin_completion_rate'),
-            $cacheTtl,
-            fn () => $this->stats->completionRateByCertification()
-        ));
+        $completionRateByCertification = $this->safe(fn () => $this->stats->completionRateByCertification());
 
         $byCertificationTop10 = $kpi !== null
             ? collect($kpi['by_certification'])->take(10)

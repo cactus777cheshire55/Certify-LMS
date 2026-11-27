@@ -2,17 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
 use App\Enums\CertificationStatus;
 use App\Enums\QaThreadStatus;
-use App\Http\Controllers\Controller;
 use App\Models\Certification;
 use App\Models\QaReply;
 use App\Models\QaThread;
 use Illuminate\Http\Request;
 
-class QaThreadController extends Controller
+class QaThreadModerationController extends Controller
 {
     /**
      * モデレーション一覧（公開停止中を含む全資格を横断表示）

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\Content\QuestionCategoryInUseException;
 use App\Http\Requests\QuestionCategory\StoreRequest;
 use App\Http\Requests\QuestionCategory\UpdateRequest;
 use App\Models\Certification;
@@ -12,13 +13,11 @@ use App\UseCases\QuestionCategory\DestroyAction;
 use App\UseCases\QuestionCategory\IndexAction;
 use App\UseCases\QuestionCategory\StoreAction;
 use App\UseCases\QuestionCategory\UpdateAction;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-/**
- * 出題分野マスタ管理 Controller。
- * 演習問題(SectionQuestion) と模試問題(MockExamQuestion) の両系統から参照される共有マスタの CRUD を担う。
- */
 class QuestionCategoryController extends Controller
 {
     public function index(Certification $certification, IndexAction $action): View
@@ -49,15 +48,27 @@ class QuestionCategoryController extends Controller
             ->with('success', '出題分野を更新しました。');
     }
 
-    public function destroy(QuestionCategory $category, DestroyAction $action): RedirectResponse
+    public function destroy(Request $request, QuestionCategory $category, DestroyAction $action): RedirectResponse|JsonResponse
     {
         $this->authorize('delete', $category);
-
         $certificationId = $category->certification_id;
-        $action($category);
 
-        return redirect()
-            ->route('admin.certifications.question-categories.index', $certificationId)
-            ->with('success', '出題分野を削除しました。');
+        try {
+            $action($category);
+
+            return redirect()
+                ->route('admin.certifications.question-categories.index', $certificationId)
+                ->with('success', '出題分野を削除しました。');
+        } catch (QuestionCategoryInUseException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                ], 409);
+            }
+
+            return redirect()
+                ->route('admin.certifications.question-categories.index', $certificationId)
+                ->with('error', '問題が紐づいている出題分野は削除できません。');
+        }
     }
 }

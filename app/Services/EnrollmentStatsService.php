@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\EnrollmentStatus;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -25,24 +26,30 @@ class EnrollmentStatsService
      */
     public function adminKpi(): array
     {
-        $counts = DB::table('enrollments')
-            ->whereNull('deleted_at')
-            ->selectRaw('status, COUNT(*) as cnt')
-            ->groupBy('status')
-            ->pluck('cnt', 'status')
-            ->all();
+        return Cache::remember(
+            config('dashboard.admin_kpi_cache_key', 'dashboard:admin_kpi'),
+            config('dashboard.cache_ttl', 3600),
+            function (): array {
+                $counts = DB::table('enrollments')
+                    ->whereNull('deleted_at')
+                    ->selectRaw('status, COUNT(*) as cnt')
+                    ->groupBy('status')
+                    ->pluck('cnt', 'status')
+                    ->all();
 
-        $learning = (int) ($counts[EnrollmentStatus::Learning->value] ?? 0);
-        $passed = (int) ($counts[EnrollmentStatus::Passed->value] ?? 0);
-        $failed = (int) ($counts[EnrollmentStatus::Failed->value] ?? 0);
+                $learning = (int) ($counts[EnrollmentStatus::Learning->value] ?? 0);
+                $passed = (int) ($counts[EnrollmentStatus::Passed->value] ?? 0);
+                $failed = (int) ($counts[EnrollmentStatus::Failed->value] ?? 0);
 
-        return [
-            'learning_count' => $learning,
-            'passed_count' => $passed,
-            'failed_count' => $failed,
-            'total' => $learning + $passed + $failed,
-            'by_certification' => $this->byCertification(),
-        ];
+                return [
+                    'learning_count' => $learning,
+                    'passed_count' => $passed,
+                    'failed_count' => $failed,
+                    'total' => $learning + $passed + $failed,
+                    'by_certification' => $this->byCertification(),
+                ];
+            }
+        );
     }
 
     /**
@@ -77,15 +84,19 @@ class EnrollmentStatsService
      */
     public function completionRateByCertification(): Collection
     {
-        return collect($this->byCertification())
-            ->filter(fn (array $row): bool => $row['total'] > 0)
-            ->map(function (array $row): array {
-                $row['completion_rate'] = round($row['passed'] / $row['total'], 4);
+        return Cache::remember(
+            config('dashboard.admin_completion_rate_cache_key', 'dashboard:admin_completion_rate'),
+            config('dashboard.cache_ttl', 3600),
+            fn (): Collection => collect($this->byCertification())
+                ->filter(fn (array $row): bool => $row['total'] > 0)
+                ->map(function (array $row): array {
+                    $row['completion_rate'] = round($row['passed'] / $row['total'], 4);
 
-                return $row;
-            })
-            ->sortByDesc('total')
-            ->values();
+                    return $row;
+                })
+                ->sortByDesc('total')
+                ->values()
+        );
     }
 
     /**

@@ -30,12 +30,20 @@ class StripeWebhookController extends Controller
         }
 
         if ($event->type === 'checkout.session.completed') {
-            $session = $event->data->object;
-            $paymentId = $session->metadata->payment_id ?? null;
+            return $this->handleCheckoutSessionCompleted($event->data->object);
+        }
 
-            $payment = Payment::where('id', $paymentId)
-                ->orWhere('stripe_session_id', $session->id)
-                ->first();
+        if ($event->type === 'checkout.session.expired') {
+            return $this->handleCheckoutSessionExpired($event->data->object);
+        }
+
+        return response()->json(['status' => 'success']);
+    }
+
+    private function handleCheckoutSessionCompleted(object $session): JsonResponse
+    {
+        return DB::transaction(function () use ($session): JsonResponse {
+            $payment = $this->findLockedPayment($session);
 
             if (! $payment) {
                 Log::warning('Stripe Webhook: Payment Record Not Found', ['session_id' => $session->id]);
@@ -48,26 +56,64 @@ class StripeWebhookController extends Controller
                 return response()->json(['status' => 'already_processed']);
             }
 
-            DB::transaction(function () use ($payment, $session) {
-                // 1. Payment の状態更新
-                $payment->update([
-                    'status' => PaymentStatus::Succeeded,
-                    'stripe_payment_intent_id' => $session->payment_intent ?? null,
-                    'paid_at' => now(),
-                ]);
+            // 1. Payment の状態更新
+            $payment->update([
+                'status' => PaymentStatus::Succeeded,
+                'stripe_payment_intent_id' => $session->payment_intent ?? null,
+                'paid_at' => now(),
+            ]);
 
-                // 2. 面談回数の付加トランザクション起票
-                MeetingQuotaTransaction::create([
-                    'user_id' => $payment->user_id,
-                    'type' => 'purchased',
-                    'amount' => $payment->quantity,
-                    'related_payment_id' => $payment->id,
-                    'note' => "追加面談パック「{$payment->meetingPack->name}」の購入",
-                    'occurred_at' => now(),
-                ]);
-            });
-        }
+            // 2. 面談回数の付加トランザクション起票
+            MeetingQuotaTransaction::create([
+                'user_id' => $payment->user_id,
+                'type' => 'purchased',
+                'amount' => $payment->quantity,
+                'related_payment_id' => $payment->id,
+                'note' => "追加面談パック「{$payment->meetingPack->name}」の購入",
+                'occurred_at' => now(),
+            ]);
 
-        return response()->json(['status' => 'success']);
+            return response()->json(['status' => 'success']);
+        });
+    }
+
+    private function handleCheckoutSessionExpired(object $session): JsonResponse
+    {
+        return DB::transaction(function () use ($session): JsonResponse {
+            $payment = $this->findLockedPayment($session);
+
+            if (! $payment) {
+                Log::warning('Stripe Webhook: Payment Record Not Found', ['session_id' => $session->id]);
+
+                return response()->json(['status' => 'payment_not_found'], 200);
+            }
+
+            // すでに完了・失敗済みの場合は何もしない（冪等性チェック）
+            if ($payment->status !== PaymentStatus::Pending) {
+                return response()->json(['status' => 'already_processed']);
+            }
+
+            $payment->update([
+                'status' => PaymentStatus::Failed,
+            ]);
+
+            return response()->json(['status' => 'success']);
+        });
+    }
+
+    private function findLockedPayment(object $session): ?Payment
+    {
+        $paymentId = $session->metadata->payment_id ?? null;
+
+        return Payment::where(function ($query) use ($paymentId, $session) {
+            if ($paymentId !== null) {
+                $query->where('id', $paymentId)
+                    ->orWhere('stripe_session_id', $session->id);
+            } else {
+                $query->where('stripe_session_id', $session->id);
+            }
+        })
+            ->lockForUpdate()
+            ->first();
     }
 }
